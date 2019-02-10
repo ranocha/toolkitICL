@@ -178,6 +178,11 @@ int main(int argc, char *argv[]) {
   std::vector<std::string> kernel_list;
   h5_read_strings(filename, "Kernels", kernel_list);
 
+  cl_ulong kernel_repetitions = 1;
+  if (h5_check_object(filename, "Kernel_Repetitions")) {
+	  kernel_repetitions = h5_read_single<cl_ulong>(filename, "Kernel_Repetitions");
+  }
+
   dev_mgr.add_program_url(0, "ocl_Kernel", kernel_url);
 
 	string settings;
@@ -199,7 +204,7 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  cout << "Number of Kernels to execute: " << kernel_list.size() << endl;
+  cout << "Number of Kernels to execute: " << kernel_list.size() * kernel_repetitions << endl;
 
   //TODO: Clean up; debug mode?
   // for (uint32_t kernel_idx = 0; kernel_idx < kernel_list.size(); kernel_idx++) {
@@ -372,10 +377,12 @@ int main(int argc, char *argv[]) {
 
   uint64_t total_exec_time = timer.getTimeMicroseconds();
 
-  for (string const& kernel_name : kernel_list) {
-    exec_time = exec_time + dev_mgr.execute_kernelNA(*(dev_mgr.getKernelbyName(0, "ocl_Kernel", kernel_name)),
-                                                     dev_mgr.get_queue(0, 0), range_start, global_range, local_range);
-    kernels_run++;
+  for (cl_ulong repetition = 0; repetition < kernel_repetitions; ++repetition) {
+    for (string const& kernel_name : kernel_list) {
+      exec_time = exec_time + dev_mgr.execute_kernelNA(*(dev_mgr.getKernelbyName(0, "ocl_Kernel", kernel_name)),
+                                                       dev_mgr.get_queue(0, 0), range_start, global_range, local_range);
+      kernels_run++;
+    }
   }
 
   total_exec_time = timer.getTimeMicroseconds() - total_exec_time;
