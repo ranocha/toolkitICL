@@ -183,6 +183,10 @@ std::string getOS()
 
     rel_file.close();
   }
+  else {
+       version << "Unknown Distribution";
+       }
+
   version << "/" << unameData.release << "/" << unameData.version;
 
 #endif
