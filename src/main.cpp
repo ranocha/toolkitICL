@@ -171,13 +171,15 @@ std::string getOS()
 
   version << unameData.sysname << " ";
 
-  ifstream rel_file ("/etc/os-release");
+  ifstream rel_file("/etc/os-release");
   if (rel_file.is_open()) {
-    for (unsigned int i = 0; i < 5; i++) {
-      getline (rel_file,line);
+    while (rel_file.good()) {
+      getline(rel_file, line);
+      if (line.size() >= 1 && line.substr(0,11) == "PRETTY_NAME") {
+        version << line.substr(13, line.length()-14);
+        break;
+      }
     }
-
-    version << line.substr(13,line.length()-14);
 
     rel_file.close();
   }
