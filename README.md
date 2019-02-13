@@ -50,6 +50,7 @@ toolkitICL automatically. Otherwise `cmake-gui` can be used on Windows systems t
 project files.
 
 If the CUDA toolkit is detected, CMake will enable CUDA support for power and temperature logging automatically.
+It can also be controlled manually (in the source code) using the `USENVML` define.
 
 
 ## Usage
