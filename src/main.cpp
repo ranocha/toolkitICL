@@ -170,10 +170,12 @@ std::string getOS()
   FILE* sw_vers = popen("sw_vers", "r");
   while (fgets(&line[0], sizeof(line), sw_vers) != nullptr) {
     if (strncmp(line, "ProductName:", 12) == 0) {
-      product_name = string(&line[17]);
+      product_name = string(&line[13]);
+      product_name.pop_back(); // erase the newline
     }
     else if (strncmp(line, "ProductVersion:", 15) == 0) {
-      product_version = string(&line[17]);
+      product_version = string(&line[16]);
+      product_version.pop_back(); // erase the newline
     }
   }
   pclose(sw_vers);
