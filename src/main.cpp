@@ -163,9 +163,23 @@ std::string getOS()
     version << " Server";
   }
 
-// #elif defined(__APPLE__)
+#elif defined(__APPLE__)
 
-#else
+  char line[256];
+  string product_name, product_version;
+  FILE* sw_vers = popen("sw_vers", "r");
+  while (fgets(&line[0], sizeof(line), sw_vers) != nullptr) {
+    if (strncmp(line, "ProductName:", 12) == 0) {
+      product_name = string(&line[17]);
+    }
+    else if (strncmp(line, "ProductVersion:", 15) == 0) {
+      product_version = string(&line[17]);
+    }
+  }
+  pclose(sw_vers);
+  version << product_name << " " << product_version;
+
+#else // linux
 
   struct utsname unameData;
   uname(&unameData);
