@@ -48,7 +48,7 @@ In case some of the OpenCL headers are missing, they can be obtained directly fr
 you can add the command line switch `-DGET_CL2HPP=ON` to CMake.
 
 On some compute cluster systems, it might be necessary to explicitly define the library path in the
-cmake configuration files. If no icd loader is available, the path to the OpenCL vendor library hast
+cmake configuration files. If no ICD loader is available, the path to the OpenCL vendor library has
 to be defined manually.
 
 If the CUDA toolkit is detected, CMake will enable CUDA support for power and temperature logging automatically.
