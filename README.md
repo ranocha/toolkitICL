@@ -54,6 +54,9 @@ to be defined manually.
 If the CUDA toolkit is detected, CMake will enable CUDA support for power and temperature logging automatically.
 It can also be controlled manually (in the source code) using the `USENVML` define.
 
+If the Intel® Power Gadget API is detected (Windows only), CMake will enable power and temperature logging for supported Intel CPUs and GPUs automatically.
+Depending on the architecture, the power consumption is determined by the system based on a heuristic algorithm and not measured directly.
+The necessary drivers and additional information are available at [Intel]( https://software.intel.com/en-us/articles/intel-power-gadget-20).
 
 ## Usage
 
@@ -66,6 +69,8 @@ ToolkitICL can be controlled by the following command line options:
 - `-c config.h5`:  Specify the URL `config.h5` of the HDF5 configuration file.
 - `-np sample_rate`: Log Nvidia GPU power consumption with sample_rate (ms).
 - `-nt sample_rate`: Log Nvidia GPU temperature with sample_rate (ms).
+- `-isp sample_rate`: Log Intel system power consumption with sample_rate (ms).
+- `-it sample_rate`: Log Intel CPU temperature with sample_rate (ms).
 
 A useful tool to view and edit HDF5 files is [HDFView](https://www.hdfgroup.org/downloads/hdfview/).
 

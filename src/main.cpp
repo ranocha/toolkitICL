@@ -10,6 +10,8 @@
 #include <thread>
 #include <time.h>
 #include <vector>
+#include <codecvt>
+#include <string>
 
 #include "opencl_include.hpp"
 #include "util.hpp"
@@ -24,20 +26,20 @@
 
 int gettimeofday(struct timeval * tp, struct timezone * tzp)
 {
-  static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
+	static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
 
-  SYSTEMTIME  system_time;
-  FILETIME    file_time;
-  uint64_t    time;
+	SYSTEMTIME  system_time;
+	FILETIME    file_time;
+	uint64_t    time;
 
-  GetSystemTime(&system_time);
-  SystemTimeToFileTime(&system_time, &file_time);
-  time = ((uint64_t)file_time.dwLowDateTime);
-  time += ((uint64_t)file_time.dwHighDateTime) << 32;
+	GetSystemTime(&system_time);
+	SystemTimeToFileTime(&system_time, &file_time);
+	time = ((uint64_t)file_time.dwLowDateTime);
+	time += ((uint64_t)file_time.dwHighDateTime) << 32;
 
-  tp->tv_sec = (long)((time - EPOCH) / 10000000L);
-  tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
-  return 0;
+	tp->tv_sec = (long)((time - EPOCH) / 10000000L);
+	tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
+	return 0;
 }
 
 #else
@@ -45,6 +47,83 @@ int gettimeofday(struct timeval * tp, struct timezone * tzp)
 #endif
 
 using namespace std;
+
+
+#if defined(_WIN32)
+#if defined(USEIRAPL)
+#include "IntelPowerGadgetLib.h"
+
+std::string utf16ToUtf8(const std::wstring& utf16Str)
+{
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+	return conv.to_bytes(utf16Str);
+}
+
+CIntelPowerGadgetLib energyLib;
+
+std::vector<timeval> is_pwr_time;
+std::vector<timeval> is_tmp_time;
+std::vector<std::string> MSR_names;
+std::vector<int> MSR;
+bool is_log_pwr = false;
+bool is_log_tmp = false;
+cl_uint is_p_rate = 0;
+cl_uint is_t_rate = 0;
+
+std::vector <float> is_pwr[5];
+std::vector <int> is_tmp;
+
+void is_log_tmp_func()
+{
+	int Data;
+	timeval rawtime;
+
+	if (is_t_rate > 0)
+	{
+		is_tmp_time.clear();
+
+		while (is_log_tmp == true) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(is_t_rate));
+			energyLib.GetTemperature(0, &Data);
+			gettimeofday(&rawtime, NULL);
+			is_tmp_time.push_back(rawtime);
+		    is_tmp.push_back(Data);
+
+		}
+
+	}
+}
+
+void is_log_pwr_func()
+{
+	double data[3];
+	int nData;
+    timeval rawtime;
+
+	if (is_p_rate>0)
+	{
+	    is_pwr_time.clear();
+
+		while (is_log_pwr == true) {
+		  std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate));
+		  energyLib.ReadSample();
+		  gettimeofday(&rawtime, NULL);
+		  is_pwr_time.push_back(rawtime);
+
+		  for (unsigned int i = 0; i < MSR.size(); i++) {
+			  energyLib.GetPowerData(0, MSR.at(i), data, &nData);
+			  is_pwr[i].push_back((float)data[0]);
+		  }
+
+		}
+		
+	}
+}
+
+
+#endif
+#endif
+
 
 #if defined(USENVML)
 #include <nvml.h>
@@ -239,6 +318,10 @@ void print_help()
        << "  -np sample_rate: " << "Log Nvidia GPU power consumption with sample_rate (ms)" << endl
        << "  -nt sample_rate: " << "Log Nvidia GPU temperature with sample_rate (ms)" << endl
 #endif
+#if defined(USEIRAPL)
+	  << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
+	  << "  -it  sample_rate: " << "Log Intel package temperature with sample_rate (ms)" << endl
+#endif
        << endl;
 }
 
@@ -278,6 +361,18 @@ int main(int argc, char *argv[]) {
     char const* tmp = getCmdOption(argv, argv + argc, "-nt");
     nv_t_rate = atoi(tmp);
      nv_log_tmp = true;
+  }
+#endif
+#if defined(USEIRAPL)
+  if (cmdOptionExists(argv, argv + argc, "-isp")) {
+	  char const* tmp = getCmdOption(argv, argv + argc, "-isp");
+	  is_p_rate = atoi(tmp);
+	  is_log_pwr = true;
+  }
+if (cmdOptionExists(argv, argv + argc, "-it")) {
+	 char const* tmp = getCmdOption(argv, argv + argc, "-it");
+	 is_t_rate = atoi(tmp);
+	 is_log_tmp = true;
   }
 #endif
   ocl_dev_mgr& dev_mgr = ocl_dev_mgr::getInstance();
@@ -502,6 +597,63 @@ int main(int argc, char *argv[]) {
   std::thread nv_log_tmp_thread(nv_log_tmp_func);
 #endif
 
+#if defined(USEIRAPL)
+  h5_create_dir(out_name, "/Intel_HK");
+
+  if (is_log_pwr==true)
+  {
+	 
+	  if (energyLib.IntelEnergyLibInitialize() == false)
+	  {
+		  cout << "Intel CPU RAPL interface error!" << endl;
+		  return -1;
+	  }
+      cout << "Using Intel CPU MSR interface..." << endl << endl;
+	  
+	  int numCPUnodes = 0;
+	  energyLib.GetNumNodes(&numCPUnodes);
+
+	  int numMsrs = 0;
+	  energyLib.GetNumMsrs(&numMsrs);
+
+	  //This is necesarry for initalization
+	  energyLib.ReadSample();
+	  energyLib.ReadSample();
+	  energyLib.ReadSample();
+
+	  for (int j = 0; j < numMsrs; j++)
+	  {
+		  int funcID;
+		  double data[3];
+		  int nData;
+		  wchar_t szName[MAX_PATH];
+
+          energyLib.GetMsrFunc(j, &funcID);
+		  energyLib.GetMsrName(j, szName);
+
+
+		  if ((funcID == 1)) {
+			  MSR.push_back(j);
+			  MSR_names.push_back(utf16ToUtf8(szName));
+		  }
+
+		  //Get Package Power Limit
+		  if ((funcID == 3) ) {
+			  double data[3];
+			  int nData;
+			  energyLib.GetPowerData(0, j, data, &nData);
+			  std::string varname = "/Intel_HK/" +  utf16ToUtf8(szName) + "_Power_Limit";
+			  h5_write_single<double>(out_name, varname.c_str() , data[0]);
+		  }
+
+	  }
+
+  }
+	  std::thread is_log_pwr_thread(is_log_pwr_func);
+	  std::thread is_log_tmp_thread(is_log_tmp_func);
+
+#endif
+
   if (benchmark_mode == true) {
     cout << "Sleeping for 4s" << endl << endl;
     std::chrono::milliseconds timespan(4000);
@@ -547,6 +699,60 @@ int main(int argc, char *argv[]) {
 
  cout << "Saving results... " << endl;
 
+#if defined(USEIRAPL)
+
+	 is_log_pwr = false;
+	 is_log_pwr_thread.join();
+
+	 is_log_tmp = false;
+	 is_log_tmp_thread.join();
+
+ if (is_p_rate > 0)
+ {
+	 std::vector<std::string> time_strings;
+
+	 for (size_t i = 0; i < is_pwr_time.size(); i++) {
+		 char time_buffer[100];
+		 time_t temp = is_pwr_time.at(i).tv_sec;
+		 timeinfo = localtime(&temp);
+		 strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
+		 sprintf(time_buffer, "%s:%03ld", time_buffer, is_pwr_time.at(i).tv_usec / 1000);
+		 time_strings.push_back(time_buffer);
+	 }
+
+	 h5_write_strings(out_name, "/Intel_HK/Power_Time", time_strings);
+	 time_strings.clear();
+
+	 for (size_t i = 0; i < MSR_names.size(); i++)
+	 {
+		 std::string varname = "/Intel_HK/" + MSR_names.at(i);
+		 h5_write_buffer<cl_float>(out_name, varname.c_str(), is_pwr[i].data(), is_pwr[i].size());
+	 }
+
+ }
+
+ if (is_t_rate > 0)
+ {
+	 std::vector<std::string> time_strings;
+
+	 for (size_t i = 0; i < is_tmp_time.size(); i++) {
+		 char time_buffer[100];
+		 time_t temp = is_tmp_time.at(i).tv_sec;
+		 timeinfo = localtime(&temp);
+		 strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
+		 sprintf(time_buffer, "%s:%03ld", time_buffer, is_tmp_time.at(i).tv_usec / 1000);
+		 time_strings.push_back(time_buffer);
+	 }
+
+	 h5_write_strings(out_name, "/Intel_HK/Temperature_Time", time_strings);
+	 time_strings.clear();
+
+	 h5_write_buffer<cl_int>(out_name, "/Intel_HK/Package_Temperature", is_tmp.data(), is_tmp.size());
+
+ }
+
+#endif
+
 #if defined(USENVML)
   nv_log_pwr = false;
   nv_log_tmp = false;
@@ -570,7 +776,7 @@ int main(int argc, char *argv[]) {
       time_strings.push_back(time_buffer);
     }
 
-    h5_write_strings(out_name, "/NV_HK/NV_Power_Time", time_strings);
+    h5_write_strings(out_name, "/NV_HK/Power_Time", time_strings);
     time_strings.clear();
   }
 

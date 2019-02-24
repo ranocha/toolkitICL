@@ -11,6 +11,18 @@ ELSE()
   option(USENVML "Use NVML" OFF)
 ENDIF()
 
+if(DEFINED ENV{IPG_Dir})
+    message(STATUS "Found Intel Power Gadget Driver")
+	option(USEIRAPL "Use Intel RAPL" ON)
+ELSE()
+	option(USEIRAPL "Use Intel RAPL" OF)
+endif()
+
+IF(USEIRAPL)
+  MESSAGE(STATUS "Using Intel Power Gadget API")
+  add_definitions(-DUSEIRAPL)
+ENDIF()
+
 IF(USENVML)
   MESSAGE(STATUS "Using NVML")
   add_definitions(-DUSENVML)

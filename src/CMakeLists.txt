@@ -3,9 +3,17 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${OpenCL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ../include)
 
 # header files of the project
+IF(USEIRAPL)
 set(HEADER ../include/opencl_include.hpp ../include/ocl_dev_mgr.hpp ../include/timer.hpp ../include/util.hpp)
+ELSE(USEIRAPL)
+set(HEADER ../include/opencl_include.hpp ../include/ocl_dev_mgr.hpp ../include/timer.hpp ../include/util.hpp ../include/IntelPowerGadgetLib.h)
+ENDIF(USEIRAPL)
 
+IF(USEIRAPL)
+set(SOURCES main.cpp ocl_dev_mgr.cpp IntelPowerGadgetLib.cpp ${HEADER})
+ELSE(USEIRAPL)
 set(SOURCES main.cpp ocl_dev_mgr.cpp ${HEADER})
+ENDIF(USEIRAPL)
 
 # add hdf5_io as object library in order to reuse it for the tests
 add_library(hdf5_io OBJECT ../include/hdf5_io.hpp hdf5_io.cpp)
