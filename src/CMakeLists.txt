@@ -4,15 +4,23 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${OpenCL_INCLUDE_DIRS} ${HDF5_IN
 
 # header files of the project
 IF(USEIRAPL)
-set(HEADER ../include/opencl_include.hpp ../include/ocl_dev_mgr.hpp ../include/timer.hpp ../include/util.hpp)
+set(HEADER ../include/opencl_include.hpp ../include/ocl_dev_mgr.hpp ../include/timer.hpp ../include/util.hpp ../include/rapl.h)
 ELSE(USEIRAPL)
+IF(USEIPG)
 set(HEADER ../include/opencl_include.hpp ../include/ocl_dev_mgr.hpp ../include/timer.hpp ../include/util.hpp ../include/IntelPowerGadgetLib.h)
+ELSE(USEIPG)
+set(HEADER ../include/opencl_include.hpp ../include/ocl_dev_mgr.hpp ../include/timer.hpp ../include/util.hpp)
+ENDIF(USEIPG)
 ENDIF(USEIRAPL)
 
 IF(USEIRAPL)
-set(SOURCES main.cpp ocl_dev_mgr.cpp IntelPowerGadgetLib.cpp ${HEADER})
+set(SOURCES main.cpp ocl_dev_mgr.cpp rapl.cpp ${HEADER})
 ELSE(USEIRAPL)
+IF(USEIPG)
+set(SOURCES main.cpp ocl_dev_mgr.cpp IntelPowerGadgetLib.cpp ${HEADER})
+ELSE(USEIPG)
 set(SOURCES main.cpp ocl_dev_mgr.cpp ${HEADER})
+ENDIF(USEIPG)
 ENDIF(USEIRAPL)
 
 # add hdf5_io as object library in order to reuse it for the tests

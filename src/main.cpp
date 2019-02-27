@@ -48,9 +48,52 @@ int gettimeofday(struct timeval * tp, struct timezone * tzp)
 
 using namespace std;
 
+#if defined(USEIRAPL)
+#include "rapl.h"
+bool is_log_pwr = false;
+cl_uint is_p_rate = 0;
+std::vector<timeval> is_pwr_time;
+std::vector <float> is_pwr[5];
+std::vector<std::string> MSR_names {"Package","Socket 0","Socket 1","DRAM"};
+
+Rapl *rapl = new Rapl();
+
+void is_log_pwr_func()
+{
+	timeval rawtime;
+
+	if (is_p_rate > 0)
+	{
+	
+	uint64_t pkg;
+	uint64_t pp0;
+	uint64_t pp1;
+	uint64_t dram;
+
+
+		while (is_log_pwr == true) {
+			
+			rapl->sample();
+			std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate/2));
+			gettimeofday(&rawtime, NULL);
+			std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate/2));
+			is_pwr_time.push_back(rawtime);
+			rapl->get_data(pkg,pp0,pp1,dram);
+		    is_pwr[0].push_back(pkg);
+			is_pwr[1].push_back(pp0);
+			is_pwr[2].push_back(pp1);
+			is_pwr[3].push_back(dram);
+
+		}
+
+	}
+}
+
+#endif
+
 
 #if defined(_WIN32)
-#if defined(USEIRAPL)
+#if defined(USEIPG)
 #include "IntelPowerGadgetLib.h"
 
 std::string utf16ToUtf8(const std::wstring& utf16Str)
@@ -318,9 +361,12 @@ void print_help()
        << "  -np sample_rate: " << "Log Nvidia GPU power consumption with sample_rate (ms)" << endl
        << "  -nt sample_rate: " << "Log Nvidia GPU temperature with sample_rate (ms)" << endl
 #endif
-#if defined(USEIRAPL)
+#if defined(USEIPG)
 	  << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
 	  << "  -it  sample_rate: " << "Log Intel package temperature with sample_rate (ms)" << endl
+#endif
+#if defined(USEIRAPL)
+	  << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
 #endif
        << endl;
 }
@@ -363,7 +409,7 @@ int main(int argc, char *argv[]) {
      nv_log_tmp = true;
   }
 #endif
-#if defined(USEIRAPL)
+#if defined(USEIPG)
   if (cmdOptionExists(argv, argv + argc, "-isp")) {
 	  char const* tmp = getCmdOption(argv, argv + argc, "-isp");
 	  is_p_rate = atoi(tmp);
@@ -373,6 +419,13 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	 char const* tmp = getCmdOption(argv, argv + argc, "-it");
 	 is_t_rate = atoi(tmp);
 	 is_log_tmp = true;
+  }
+#endif
+#if defined(USEIRAPL)
+  if (cmdOptionExists(argv, argv + argc, "-isp")) {
+	  char const* tmp = getCmdOption(argv, argv + argc, "-isp");
+	  is_p_rate = atoi(tmp);
+	  is_log_pwr = true;
   }
 #endif
   ocl_dev_mgr& dev_mgr = ocl_dev_mgr::getInstance();
@@ -597,7 +650,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   std::thread nv_log_tmp_thread(nv_log_tmp_func);
 #endif
 
-#if defined(USEIRAPL)
+#if defined(USEIPG)
   h5_create_dir(out_name, "/Intel_HK");
 
   if (is_log_pwr==true)
@@ -654,6 +707,15 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
 #endif
 
+#if defined(USEIRAPL)
+  h5_create_dir(out_name, "/Intel_HK");
+
+ 
+	  std::thread is_log_pwr_thread(is_log_pwr_func);
+	  
+  
+#endif
+
   if (benchmark_mode == true) {
     cout << "Sleeping for 4s" << endl << endl;
     std::chrono::milliseconds timespan(4000);
@@ -699,7 +761,48 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
  cout << "Saving results... " << endl;
 
+
 #if defined(USEIRAPL)
+
+	 is_log_pwr = false;
+	 is_log_pwr_thread.join();
+
+ if (is_p_rate > 0)
+ {
+	 std::vector<std::string> time_strings;
+
+	 for (size_t i = 0; i < is_pwr_time.size()-1; i++) {
+		 char time_buffer[100];
+		 time_t temp = is_pwr_time.at(i).tv_sec;
+		 timeinfo = localtime(&temp);
+		 strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
+		 sprintf(time_buffer, "%s:%03ld", time_buffer, is_pwr_time.at(i).tv_usec / 1000);
+		 time_strings.push_back(time_buffer);
+	 }
+
+	 h5_write_strings(out_name, "/Intel_HK/Power_Time", time_strings);
+	 time_strings.clear();
+	 
+	 std::vector<double> tmp_vector;
+
+	 for (size_t i = 0; i < 4; i++)
+	 { 
+	
+        tmp_vector.clear();
+		
+		for (size_t j = 0; j < is_pwr[i].size()-1; j++)
+	     {
+	        tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr[i].at(j+1)-is_pwr[i].at(j)))/((double)is_p_rate*0.001));
+	     }
+		 std::string varname = "/Intel_HK/" + MSR_names.at(i);
+		 h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
+	 }
+
+ }
+
+#endif
+
+#if defined(USEIPG)
 
 	 is_log_pwr = false;
 	 is_log_pwr_thread.join();

@@ -13,13 +13,22 @@ ENDIF()
 
 if(DEFINED ENV{IPG_Dir})
     message(STATUS "Found Intel Power Gadget Driver")
-	option(USEIRAPL "Use Intel RAPL" ON)
+	option(USEIPG "Use Intel Power Gadget" ON)
 ELSE()
-	option(USEIRAPL "Use Intel RAPL" OF)
+	option(USEIPG "Use Intel Power Gadget" OF)
 endif()
 
+IF(USEIPG)
+  MESSAGE(STATUS "Using Intel Power Gadget")
+  add_definitions(-DUSEIPG)
+ENDIF()
+
+IF(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+option(USEIRAPL "Use RAPL" ON)
+ENDIF()
+
 IF(USEIRAPL)
-  MESSAGE(STATUS "Using Intel Power Gadget API")
+  MESSAGE(STATUS "Using Intel RAPL")
   add_definitions(-DUSEIRAPL)
 ENDIF()
 
