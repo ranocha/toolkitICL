@@ -708,8 +708,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 #endif
 
 #if defined(USEIRAPL)
-  h5_create_dir(out_name, "/Intel_HK");
-
+      h5_create_dir(out_name, "/Intel_HK");
+      h5_write_single<double>(out_name, "/Intel_HK/TDP", rapl->get_TDP());
  
 	  std::thread is_log_pwr_thread(is_log_pwr_func);
 	  

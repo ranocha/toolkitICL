@@ -31,6 +31,7 @@ public:
 	
 	bool get_data(uint64_t &Epkg , uint64_t &Epp0 , uint64_t &Epp1 , uint64_t &Edram);
     double get_e_unit();
+	double get_TDP();
 	
 };
 

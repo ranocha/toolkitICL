@@ -152,3 +152,6 @@ double Rapl::get_e_unit() {
 	
 }
 
+double Rapl::get_TDP(){
+    return thermal_spec_power;
+}
