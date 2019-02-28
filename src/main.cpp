@@ -663,6 +663,10 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	  }
       cout << "Using Intel Power Gadget interface..." << endl << endl;
 	  
+	  double CPU_TDP = 0;
+	  energyLib.GetTDP(0,&CPU_TDP);
+	  h5_write_single<uint32_t>(out_name, "/Intel_HK/TDP" , (uint32_t)round(CPU_TDP));
+	  
 	  int numCPUnodes = 0;
 	  energyLib.GetNumNodes(&numCPUnodes);
 
@@ -780,7 +784,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 		 char time_buffer[100];
 		 time_t temp = is_pwr_time.at(i).tv_sec;
 		 timeinfo = localtime(&temp);
-		 strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
+		 strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
 		 sprintf(time_buffer, "%s:%03ld", time_buffer, is_pwr_time.at(i).tv_usec / 1000);
 		 time_strings.push_back(time_buffer);
 	 }
@@ -823,7 +827,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 		 char time_buffer[100];
 		 time_t temp = is_pwr_time.at(i).tv_sec;
 		 timeinfo = localtime(&temp);
-		 strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
+		 strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
 		 sprintf(time_buffer, "%s:%03ld", time_buffer, is_pwr_time.at(i).tv_usec / 1000);
 		 time_strings.push_back(time_buffer);
 	 }
@@ -847,7 +851,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 		 char time_buffer[100];
 		 time_t temp = is_tmp_time.at(i).tv_sec;
 		 timeinfo = localtime(&temp);
-		 strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
+		 strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
 		 sprintf(time_buffer, "%s:%03ld", time_buffer, is_tmp_time.at(i).tv_usec / 1000);
 		 time_strings.push_back(time_buffer);
 	 }
@@ -879,7 +883,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
       char time_buffer[100];
       time_t temp = nv_pwr_time.at(i).tv_sec;
       timeinfo = localtime(&temp);
-      strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
+      strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
       sprintf(time_buffer, "%s:%03ld", time_buffer, nv_pwr_time.at(i).tv_usec / 1000);
       time_strings.push_back(time_buffer);
     }
@@ -896,7 +900,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
       char time_buffer[100];
       time_t temp = nv_tmp_time.at(i).tv_sec;
       timeinfo = localtime(&temp);
-      strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
+      strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
       sprintf(time_buffer, "%s:%03ld", time_buffer, nv_tmp_time.at(i).tv_usec / 1000);
       time_strings.push_back(time_buffer);
     }
@@ -908,7 +912,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
 
   char time_buffer[80];
-  strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
+  strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
 
   h5_write_string(out_name, "Kernel_ExecStart", time_buffer);
   h5_write_string(out_name, "OpenCL_Device", dev_mgr.get_avail_dev_info(deviceIndex).name.c_str());
