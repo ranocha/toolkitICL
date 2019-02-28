@@ -17,7 +17,10 @@ To build toolkitCL the following needs to be installed:
 - OpenCL (headers and drivers)
 - HDF5
 - CMake
+
+For optional power and temperature logging, the following is needed:
 - CUDA Toolkit (only for NVidia GPU power/temperature logging)
+- Intel® Power Gadget (only for Intel® CPU/GPU power/temperature logging on Windows systems)
 
 This project uses the common CMake build system. Thus, the following commands can be used on Linux.
 ```bash
@@ -54,9 +57,15 @@ to be defined manually.
 If the CUDA toolkit is detected, CMake will enable CUDA support for power and temperature logging automatically.
 It can also be controlled manually (in the source code) using the `USENVML` define.
 
-If the Intel® Power Gadget API is detected (Windows only), CMake will enable power and temperature logging for supported Intel CPUs and GPUs automatically.
+On Linux based systems, Intel® CPU power consumption can be read directly from the model-specific registers (MSR).
+To enable MSR support the `msr-tools` package is needed on Debian based systems.
+It might be necesarry to set the permissions `sudo chmod o+rw /dev/cpu/0/msr`. 
 Depending on the architecture, the power consumption is determined by the system based on a heuristic algorithm and not measured directly.
-The necessary drivers and additional information are available at [Intel]( https://software.intel.com/en-us/articles/intel-power-gadget-20).
+
+If the Intel® Power Gadget API is detected (Windows only), CMake will enable power and temperature logging for supported Intel® CPUs and GPUs automatically.
+During execution, power and temperture loggin is only available, if the `EnergyLib64.dll` is found.
+Depending on the architecture, the power consumption is determined by the system based on a heuristic algorithm and not measured directly.
+The necessary drivers and additional information are available at [Intel®]( https://software.intel.com/en-us/articles/intel-power-gadget-20).
 
 ## Usage
 
