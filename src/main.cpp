@@ -56,7 +56,7 @@ std::vector<timeval> is_pwr_time;
 std::vector <float> is_pwr[5];
 std::vector<std::string> MSR_names {"Package","Socket 0","Socket 1","DRAM"};
 
-Rapl *rapl = new Rapl();
+Rapl *rapl;
 
 void is_log_pwr_func()
 {
@@ -658,10 +658,10 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	 
 	  if (energyLib.IntelEnergyLibInitialize() == false)
 	  {
-		  cout << "Intel CPU RAPL interface error!" << endl;
+		  cout << "Intel Power Gadget interface error!" << endl;
 		  return -1;
 	  }
-      cout << "Using Intel CPU MSR interface..." << endl << endl;
+      cout << "Using Intel Power Gadget interface..." << endl << endl;
 	  
 	  int numCPUnodes = 0;
 	  energyLib.GetNumNodes(&numCPUnodes);
@@ -709,7 +709,12 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
 #if defined(USEIRAPL)
       h5_create_dir(out_name, "/Intel_HK");
-      h5_write_single<double>(out_name, "/Intel_HK/TDP", rapl->get_TDP());
+	  if (is_log_pwr==true)
+      {
+		  rapl = new Rapl();
+          h5_write_single<uint32_t>(out_name, "/Intel_HK/TDP", rapl->get_TDP());
+          cout << "Using Intel MSR interface..." << endl << endl;
+	  }
  
 	  std::thread is_log_pwr_thread(is_log_pwr_func);
 	  

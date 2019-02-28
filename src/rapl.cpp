@@ -152,6 +152,6 @@ double Rapl::get_e_unit() {
 	
 }
 
-double Rapl::get_TDP(){
-    return thermal_spec_power;
+uint32_t Rapl::get_TDP(){
+    return (uint32_t)round(thermal_spec_power);
 }
