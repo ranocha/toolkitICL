@@ -9,7 +9,8 @@ to use cross platform tool to execute a set of kernels for example on compute cl
 OpenCL benchmarks or test and validate kernels. HDF5 files are used for the entire configuration and
 data handling. The list of kernels to be executed, all variables and the workgroup size is defined in
 the input HDF5 file. After execution, the output data, data copy- and runtime is written to the
-output HDF5 file. The GPU power consumption and temperature for supported Nvidia GPUs can also be logged automatically to the output HDF file.
+output HDF5 file. The power consumption and temperature for supported Nvidia GPUs and Intel CPUs/GPUS can also be logged.
+Which housekeeping data is logged during execution can be selected by individual command line options.
 
 
 ## Setup
