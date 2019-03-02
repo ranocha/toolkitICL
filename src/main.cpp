@@ -55,7 +55,7 @@ cl_uint is_p_rate = 0;
 std::vector<timeval> is_pwr_time;
 std::vector <uint64_t> is_pwr0[5]; //Socket 0
 std::vector <uint64_t> is_pwr1[5]; //Socket 1
-std::vector<std::string> MSR_names {"Package","Cores","DRAM","IGP"};
+std::vector<std::string> MSR_names {"Package","Cores","DRAM","GT"};
 
 Rapl *rapl;
 
