@@ -53,8 +53,9 @@ using namespace std;
 bool is_log_pwr = false;
 cl_uint is_p_rate = 0;
 std::vector<timeval> is_pwr_time;
-std::vector <float> is_pwr[5];
-std::vector<std::string> MSR_names {"Package","Socket 0","Socket 1","DRAM"};
+std::vector <uint64_t> is_pwr0[5]; //Socket 0
+std::vector <uint64_t> is_pwr1[5]; //Socket 1
+std::vector<std::string> MSR_names {"Package","Cores","DRAM","IGP"};
 
 Rapl *rapl;
 
@@ -78,11 +79,20 @@ void is_log_pwr_func()
 			gettimeofday(&rawtime, NULL);
 			std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate/2));
 			is_pwr_time.push_back(rawtime);
-			rapl->get_data(pkg,pp0,pp1,dram);
-		    is_pwr[0].push_back(pkg);
-			is_pwr[1].push_back(pp0);
-			is_pwr[2].push_back(pp1);
-			is_pwr[3].push_back(dram);
+			
+			rapl->get_socket0_data(pkg,pp0,pp1,dram);
+		    is_pwr0[0].push_back(pkg);
+			is_pwr0[1].push_back(pp0);
+			is_pwr0[2].push_back(pp1);
+			is_pwr0[3].push_back(dram);
+			
+			if (rapl->detect_socket1() == true){
+			    rapl->get_socket1_data(pkg,pp0,pp1,dram);
+		        is_pwr1[0].push_back(pkg);
+			    is_pwr1[1].push_back(pp0);
+			    is_pwr1[2].push_back(pp1);
+			    is_pwr1[3].push_back(dram);
+			}
 
 		}
 
@@ -792,20 +802,43 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	 h5_write_strings(out_name, "/Intel_HK/Power_Time", time_strings);
 	 time_strings.clear();
 	 
-	 std::vector<double> tmp_vector;
-
-	 for (size_t i = 0; i < 4; i++)
+	std::vector<double> tmp_vector;
+	 
+	size_t max_entries = MSR_names.size()-1;
+		
+	if (rapl->detect_igp() == false) {
+	    max_entries--;
+	}
+		
+	 for (size_t i = 0; i < max_entries; i++)
 	 { 
 	
         tmp_vector.clear();
-		
-		for (size_t j = 0; j < is_pwr[i].size()-1; j++)
+
+		for (size_t j = 0; j < is_pwr0[i].size()-1; j++)
 	     {
-	        tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr[i].at(j+1)-is_pwr[i].at(j)))/((double)is_p_rate*0.001));
+	        tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr0[i].at(j+1)-is_pwr0[i].at(j)))/((double)is_p_rate*0.001));
 	     }
-		 std::string varname = "/Intel_HK/" + MSR_names.at(i);
+		 std::string varname = "/Intel_HK/" + MSR_names.at(i) + "0";
 		 h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
 	 }
+	 
+	if (rapl->detect_socket1() == true){
+
+     for (size_t i = 0; i < max_entries; i++)
+	 { 
+	
+        tmp_vector.clear();
+
+		for (size_t j = 0; j < is_pwr1[i].size()-1; j++)
+	     {
+	        tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr1[i].at(j+1)-is_pwr1[i].at(j)))/((double)is_p_rate*0.001));
+	     }
+		 std::string varname = "/Intel_HK/" + MSR_names.at(i) + "1";
+		 h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
+	 }
+	 
+    } 
 
  }
 

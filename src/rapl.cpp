@@ -1,9 +1,12 @@
 #include <cstdio>
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <unistd.h>
 #include <fcntl.h>
 #include <cmath>
+#include <iostream>
+#include <fstream>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -17,6 +20,11 @@
  * Platform specific RAPL Domains.
  * see Intel architecture datahseets for more information.
  */
+ 
+#define IA32_THERM_STATUS             0x19c
+#define MSR_TEMPERATURE_TARGET        0x1a2
+#define MSR_TEMPERATURE_TARGET_MASK   23:16
+
 /* Package RAPL  */
 #define MSR_PKG_RAPL_POWER_LIMIT       0x610
 #define MSR_PKG_ENERGY_STATUS          0x611
@@ -56,18 +64,62 @@
 
 
 Rapl::Rapl() {
+	uint32_t core_id0 = 0;
+	uint32_t core_id1 = 0;
+	
+	
+	pp1_supported = detect_igp();
+	open_msr(core_id0,fd0);
+	
+	
+	std::ifstream fileInput;
+    std::string line;
 
-	open_msr();
-	pp1_supported = detect_pp1();
 
+    // open /proc/cpuinfo to parse cpu configuration
+    fileInput.open("/proc/cpuinfo");
+    if(fileInput.is_open()) {
+	bool first_found = false;
+	uint32_t pid,pid_0 =0 ;
+    uint32_t curLine = 0;
+    while(getline(fileInput, line)) { 
+    curLine++;
+	size_t npos = line.find("physical id", 0);
+    if (npos != std::string::npos) {
+      npos = line.find(":");
+	  std::string token = line.substr(npos + 1, line.length() - npos - 1 );
+      
+      sscanf (token.c_str(), "%d", &pid);
+	  if (first_found == false) {
+      first_found = true;
+	  pid_0 = pid;
+	  } else {
+	  if (!(pid == pid_0))  // this core has a diffrent socket
+	  {
+	    socket1_detected = true;
+        open_msr(core_id1,fd1);
+	    //std::cout << "PID: " << pid <<"  /  "<< core_id1 <<std::endl;
+		break;
+	  }
+	  }
+   
+      core_id1++;
+    }
+	
+    }
+    fileInput.close();
+}
+else std::cout << "Unable to open /proc/cpuinfo.";
+
+	
 	/* Read MSR_RAPL_POWER_UNIT Register */
-	uint64_t raw_value = read_msr(MSR_RAPL_POWER_UNIT);
+	uint64_t raw_value = read_msr(MSR_RAPL_POWER_UNIT,fd0);
 	power_units = pow(0.5,	(double) (raw_value & 0xf));
 	energy_units = pow(0.5,	(double) ((raw_value >> 8) & 0x1f));
 	time_units = pow(0.5,	(double) ((raw_value >> 16) & 0xf));
 
 	/* Read MSR_PKG_POWER_INFO Register */
-	raw_value = read_msr(MSR_PKG_POWER_INFO);
+	raw_value = read_msr(MSR_PKG_POWER_INFO,fd0);
 	thermal_spec_power = power_units * ((double)(raw_value & 0x7fff));
 	minimum_power = power_units * ((double)((raw_value >> 16) & 0x7fff));
 	maximum_power = power_units * ((double)((raw_value >> 32) & 0x7fff));
@@ -77,7 +129,7 @@ Rapl::Rapl() {
 
 
 
-bool Rapl::detect_pp1() {
+bool Rapl::detect_igp() {
 	uint32_t eax_input = 1;
 	uint32_t eax;
 	__asm__("cpuid;"
@@ -92,16 +144,22 @@ bool Rapl::detect_pp1() {
 	return true;
 }
 
-void Rapl::open_msr() {
+bool Rapl::detect_socket1() { 
+
+	return socket1_detected;
+}
+
+
+void Rapl::open_msr(unsigned int node, int &fd) {
 	std::stringstream filename_stream;
-	filename_stream << "/dev/cpu/" << core << "/msr";
+	filename_stream << "/dev/cpu/" << node << "/msr";
 	fd = open(filename_stream.str().c_str(), O_RDONLY);
 	if (fd < 0) {
 		if ( errno == ENXIO) {
-			fprintf(stderr, "rdmsr: No CPU %d\n", core);
+			fprintf(stderr, "rdmsr: No CPU %d\n", node);
 			exit(2);
 		} else if ( errno == EIO) {
-			fprintf(stderr, "rdmsr: CPU %d doesn't support MSRs\n", core);
+			fprintf(stderr, "rdmsr: CPU %d doesn't support MSRs\n", node);
 			exit(3);
 		} else {
 			perror("rdmsr:open");
@@ -112,7 +170,7 @@ void Rapl::open_msr() {
 	}
 }
 
-uint64_t Rapl::read_msr(int msr_offset) {
+uint64_t Rapl::read_msr(int msr_offset, int &fd) {
 	uint64_t data;
 	if (pread(fd, &data, sizeof(data), msr_offset) != sizeof(data)) {
 		perror("read_msr():pread");
@@ -124,24 +182,48 @@ uint64_t Rapl::read_msr(int msr_offset) {
 void Rapl::sample() {
 	uint32_t max_int = ~((uint32_t) 0);
 
-	pkg = read_msr(MSR_PKG_ENERGY_STATUS) & max_int;
-	pp0 = read_msr(MSR_PP0_ENERGY_STATUS) & max_int;
-	dram = read_msr(MSR_DRAM_ENERGY_STATUS) & max_int;
+  
+	pkg_0 = read_msr(MSR_PKG_ENERGY_STATUS,fd0) & max_int;
+	pp0_0 = read_msr(MSR_PP0_ENERGY_STATUS,fd0) & max_int;
+	dram_0 = read_msr(MSR_DRAM_ENERGY_STATUS,fd0) & max_int;
 	
 	if (pp1_supported) {
-		pp1 = read_msr(MSR_PP1_ENERGY_STATUS) & max_int;
+		pp1_0 = read_msr(MSR_PP1_ENERGY_STATUS,fd0) & max_int;
 	} else {
-		pp1 = 0;
+		pp1_0 = 0;
 	}
+	
+	if (socket1_detected == true) {
+	
+	pkg_1 = read_msr(MSR_PKG_ENERGY_STATUS,fd1) & max_int;
+	pp0_1 = read_msr(MSR_PP0_ENERGY_STATUS,fd1) & max_int;
+	dram_1 = read_msr(MSR_DRAM_ENERGY_STATUS,fd1) & max_int;
+	
+	if (pp1_supported) {
+		pp1_1 = read_msr(MSR_PP1_ENERGY_STATUS,fd1) & max_int;
+	} else {
+		pp1_1 = 0;
+	}
+    }
 
 }
 
-bool Rapl::get_data(uint64_t &Epkg , uint64_t &Epp0 , uint64_t &Epp1 , uint64_t &Edram) {
+bool Rapl::get_socket0_data(uint64_t &Epkg , uint64_t &Epp0 , uint64_t &Epp1 , uint64_t &Edram) {
 
-     Epkg = pkg;
-	 Epp0 = pp0;
-	 Epp1 = pp1;
-	 Edram = dram;
+     Epkg = pkg_0;
+	 Epp0 = pp0_0;
+	 Epp1 = pp1_0;
+	 Edram = dram_0;
+	return true;
+	
+}
+
+bool Rapl::get_socket1_data(uint64_t &Epkg , uint64_t &Epp0 , uint64_t &Epp1 , uint64_t &Edram) {
+
+     Epkg = pkg_1;
+	 Epp0 = pp0_1;
+	 Epp1 = pp1_1;
+	 Edram = dram_1;
 	return true;
 	
 }
@@ -154,4 +236,13 @@ double Rapl::get_e_unit() {
 
 uint32_t Rapl::get_TDP(){
     return (uint32_t)round(thermal_spec_power);
+}
+
+
+uint32_t Rapl::get_temp(){
+    uint32_t max_int = ~((uint32_t) 0);
+	uint64_t reg_data;
+	
+	reg_data = read_msr(IA32_THERM_STATUS,fd0) & max_int;
+	return 0;
 }
