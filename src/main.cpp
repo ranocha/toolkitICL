@@ -81,17 +81,18 @@ void is_log_pwr_func()
 			is_pwr_time.push_back(rawtime);
 			
 			rapl->get_socket0_data(pkg,pp0,pp1,dram);
-		    is_pwr0[0].push_back(pkg);
+		  is_pwr0[0].push_back(pkg);
 			is_pwr0[1].push_back(pp0);
-			is_pwr0[2].push_back(pp1);
-			is_pwr0[3].push_back(dram);
+      is_pwr0[2].push_back(dram);
+			is_pwr0[3].push_back(pp1);
 			
 			if (rapl->detect_socket1() == true){
 			    rapl->get_socket1_data(pkg,pp0,pp1,dram);
-		        is_pwr1[0].push_back(pkg);
+		      is_pwr1[0].push_back(pkg);
 			    is_pwr1[1].push_back(pp0);
-			    is_pwr1[2].push_back(pp1);
-			    is_pwr1[3].push_back(dram);
+          is_pwr1[2].push_back(dram);
+			    is_pwr1[3].push_back(pp1);
+			    
 			}
 
 		}
@@ -804,7 +805,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	 
 	std::vector<double> tmp_vector;
 	 
-	size_t max_entries = MSR_names.size()-1;
+	size_t max_entries = MSR_names.size();
 		
 	if (rapl->detect_igp() == false) {
 	    max_entries--;
@@ -870,7 +871,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
 	 for (size_t i = 0; i < MSR_names.size(); i++)
 	 {
-		 std::string varname = "/Intel_HK/" + MSR_names.at(i);
+		 std::string varname = "/Intel_HK/" + MSR_names.at(i) + "0";
 		 h5_write_buffer<cl_float>(out_name, varname.c_str(), is_pwr[i].data(), is_pwr[i].size());
 	 }
 
