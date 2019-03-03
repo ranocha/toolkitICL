@@ -702,7 +702,17 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
 		  if ((funcID == 1)) {
 			  MSR.push_back(j);
-			  MSR_names.push_back(utf16ToUtf8(szName));
+			  if (utf16ToUtf8(szName) == "Processor") {
+				  MSR_names.push_back("Package");
+			  }
+			  else {
+				  if (utf16ToUtf8(szName) == "IA") {
+					  MSR_names.push_back("Cores");
+				  }
+				  else {
+					  MSR_names.push_back(utf16ToUtf8(szName));
+				  }
+			  }
 		  }
 
 		  //Get Package Power Limit
