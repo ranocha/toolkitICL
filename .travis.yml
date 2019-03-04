@@ -81,7 +81,7 @@ before_script:
   - julia -e "import Pkg; Pkg.add(\"HDF5\")"
 
 script:
-    # build without tests
+  # build without tests
   - mkdir build
   - cd build
   - cmake ..
@@ -106,6 +106,7 @@ script:
       sudo modprobe msr;
       cd test;
       sudo ../bin/toolkitICL -b -isp 1000 -c repetition_test.h5;
+      h5ls out_repetition_test.h5/Intel_HK || exit 1;
       h5dump -d Intel_HK/Cores0 out_repetition_test.h5 || exit 1;
       h5dump -d Intel_HK/DRAM0 out_repetition_test.h5 || exit 1;
       h5dump -d Intel_HK/GT0 out_repetition_test.h5 || exit 1;
