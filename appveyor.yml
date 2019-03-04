@@ -1,6 +1,6 @@
 image:
-  #- Visual Studio 2015
-  #- Visual Studio 2017
+  - Visual Studio 2015
+  - Visual Studio 2017
   - Ubuntu1804
 
 platform:
@@ -113,7 +113,7 @@ build_script:
   - sh: h5ls out_repetition_test.h5/Intel_HK
   - sh: h5dump -d Intel_HK/Cores0 out_repetition_test.h5
   - sh: h5dump -d Intel_HK/DRAM0 out_repetition_test.h5
-  - sh: h5dump -d Intel_HK/GT0 out_repetition_test.h5
+  # - sh: h5dump -d Intel_HK/GT0 out_repetition_test.h5 # not required on all machines
   - sh: h5dump -d Intel_HK/Package0 out_repetition_test.h5
   - sh: h5dump -d Intel_HK/Power_Time out_repetition_test.h5
   - sh: h5dump -d Intel_HK/TDP out_repetition_test.h5
