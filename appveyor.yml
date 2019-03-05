@@ -42,6 +42,13 @@ install:
   - cmd: start /wait msiexec /i opencl_runtime_16.1.2_x64_setup.msi /qn  /l*v opencl_runtime.log
   - cmd: appveyor DownloadFile "https://boinc.berkeley.edu/dl/clinfo.zip"
   - cmd: 7z e clinfo.zip
+    # needed to log power on Intel CPUs/GPUs
+  - cmd: appveyor DownloadFile "https://software.intel.com/file/612178/download" -FileName "IntelPowerGadget.zip"
+  - cmd: 7z e IntelPowerGadget.zip
+  - cmd: start /wait msiexec /i "Intel Power Gadget 3.5.0\PowerGadget.msi" /qn  /l*v intel_power_gadget.log
+  - cmd: type intel_power_gadget.log
+  - cmd: echo %IPG_Ver%
+  - cmd: echo %IPG_Dir%
       # Julia is not used on Window because it takes forever to build HDF5.jl
   # - ps: appveyor DownloadFile "https://julialang-s3.julialang.org/bin/winnt/x64/1.1/julia-1.1.0-win64.exe" -FileName "C:\projects\julia-installer.exe"
   # - ps: Start-Process -FilePath C:\projects\julia-installer.exe -ArgumentList "/S /D=C:\julia" -NoNewWindow -Wait
