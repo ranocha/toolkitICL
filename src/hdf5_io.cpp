@@ -266,6 +266,7 @@ bool h5_write_buffer(char const* filename, char const* varname, TYPE const* data
   hsize_t hdf_dims[2];
   hid_t   plist_id;
   hsize_t chunk_dims[2]; //chunk size used for compression
+  int ndims;
 
   if (!fileExists(filename)) {
     h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -277,19 +278,26 @@ bool h5_write_buffer(char const* filename, char const* varname, TYPE const* data
   hdf_dims[0] = size;
   hdf_dims[1] = get_vector_size<TYPE>();
 
+  if (hdf_dims[1] == 1) {
+    ndims = 1;
+  }
+  else {
+    ndims = 2;
+  }
+
   chunk_dims[0] = (hsize_t)(hdf_dims[0]/chunk_factor) + 1;
   chunk_dims[1] = hdf_dims[1];
 
   plist_id = H5Pcreate(H5P_DATASET_CREATE);
-  H5Pset_chunk(plist_id, 2, chunk_dims);
+  H5Pset_chunk(plist_id, ndims, chunk_dims);
   H5Pset_deflate(plist_id, 9);
 
-  dataspace_id = H5Screate_simple(2, hdf_dims, NULL);
+  dataspace_id = H5Screate_simple(ndims, hdf_dims, NULL);
   dataset_id = H5Dcreate2(h5_file_id, varname , type_to_h5_type<TYPE>(), dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 
   H5Dwrite(dataset_id, type_to_h5_type<TYPE>(), dataspace_id, dataspace_id, H5P_DEFAULT, data);
   // The same can be done using H5 High Level API, but without compression
-  // H5LTmake_dataset(h5_file_id, varname, 2, hdf_dims, type_to_h5_type<TYPE>(), data);
+  // H5LTmake_dataset(h5_file_id, varname, ndims, hdf_dims, type_to_h5_type<TYPE>(), data);
 
   H5Pclose(plist_id);
   H5Dclose(dataset_id);
