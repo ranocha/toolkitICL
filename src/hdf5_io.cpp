@@ -55,6 +55,10 @@ hid_t type_to_h5_type<cl_long>() { return H5T_NATIVE_INT64; }
 template<>
 hid_t type_to_h5_type<cl_ulong>() { return H5T_NATIVE_UINT64; }
 
+template<>
+hid_t type_to_h5_type<timeval>() { return H5T_UNIX_D64LE; }
+// TODO: Are there architectures where H5T_UNIX_D64BE is necessary?
+
 // OpenCL vector types
 template<> hid_t type_to_h5_type<cl_float4>() { return H5T_NATIVE_FLOAT; }
 template<> constexpr size_t get_vector_size<cl_float4>() { return 4; };
@@ -256,6 +260,7 @@ template bool h5_read_buffer(char const* filename, char const* varname, cl_int* 
 template bool h5_read_buffer(char const* filename, char const* varname, cl_uint* data);
 template bool h5_read_buffer(char const* filename, char const* varname, cl_long* data);
 template bool h5_read_buffer(char const* filename, char const* varname, cl_ulong* data);
+template bool h5_read_buffer(char const* filename, char const* varname, timeval* data);
 
 
 // write a buffer to an HDF5 file using compression
@@ -313,6 +318,7 @@ template bool h5_write_buffer(char const* filename, char const* varname, cl_int 
 template bool h5_write_buffer(char const* filename, char const* varname, cl_uint const* data, size_t size);
 template bool h5_write_buffer(char const* filename, char const* varname, cl_long const* data, size_t size);
 template bool h5_write_buffer(char const* filename, char const* varname, cl_ulong const* data, size_t size);
+template bool h5_write_buffer(char const* filename, char const* varname, timeval const* data, size_t size);
 
 
 
@@ -354,6 +360,31 @@ template bool h5_write_single(char const* filename, char const* varname, cl_int 
 template bool h5_write_single(char const* filename, char const* varname, cl_uint data);
 template bool h5_write_single(char const* filename, char const* varname, cl_long data);
 template bool h5_write_single(char const* filename, char const* varname, cl_ulong data);
+template bool h5_write_single(char const* filename, char const* varname, timeval data);
+
+bool h5_write_single_time_t(char const* filename, char const* varname, time_t data)
+{
+  hid_t h5_file_id;
+
+  if (!fileExists(filename)) {
+    h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  }
+  else {
+    h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+  }
+
+  H5LTmake_dataset(h5_file_id, varname, 0, NULL, H5T_UNIX_D32LE, &data);
+  // TODO: Are there architectures where H5T_UNIX_D32BE is necessary?
+
+  H5Fclose(h5_file_id);
+
+  return true;
+}
+
+bool h5_write_single_time_t(std::string const& filename, char const* varname, time_t data)
+{
+  return h5_write_single_time_t(filename.c_str(), varname, data);
+}
 
 
 // reading and writing single strings

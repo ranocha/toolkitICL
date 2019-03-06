@@ -3,6 +3,13 @@
 #ifndef HDF5_IO_H
 #define HDF5_IO_H
 
+#if defined(_WIN32)
+#include <windows.h>
+#include <sys/timeb.h>
+#else
+#include <sys/time.h>
+#endif
+
 #include "hdf5.h"
 #include "hdf5_hl.h"
 
@@ -78,6 +85,10 @@ inline bool h5_write_single(std::string const& filename, char const* varname, TY
 {
   return h5_write_single<TYPE>(filename.c_str(), varname, data);
 }
+
+// needs to be implemented separately since time_t == cl_long on many systems
+bool h5_write_single_time_t(char const* filename, char const* varname, time_t data);
+bool h5_write_single_time_t(std::string const& filename, char const* varname, time_t data);
 
 
 // reading and writing single strings

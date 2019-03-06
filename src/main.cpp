@@ -596,10 +596,17 @@ int main(int argc, char *argv[]) {
   char time_buffer[80];
   strftime(time_buffer, sizeof(time_buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
 
+  timeval test_timeval;
+  gettimeofday(&test_timeval, NULL);
+  h5_write_single<timeval>(out_name, "Kernel_ExecStartTimeval", test_timeval);
+  time_t test_timet;
+  timeinfo = localtime(&test_timet);
+  h5_write_single_time_t(out_name, "Kernel_ExecStartTimet", test_timet);
+
   h5_write_string(out_name, "Kernel_ExecStart", time_buffer);
   h5_write_string(out_name, "OpenCL_Device", dev_mgr.get_avail_dev_info(deviceIndex).name.c_str());
   h5_write_string(out_name, "OpenCL_Version", dev_mgr.get_avail_dev_info(deviceIndex).ocl_version.c_str());
-  h5_write_single<double>(out_name,"Kernel_ExecTime", (double)exec_time/1000.0);
+  h5_write_single<double>(out_name, "Kernel_ExecTime", (double)exec_time/1000.0);
   h5_write_single<double>(out_name, "Data_LoadTime", (double)push_time/1000.0);
 
   h5_create_dir(out_name, "/Data");
