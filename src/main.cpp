@@ -96,8 +96,8 @@ bool initAMDPP(uint32_t sample_rate) {
 	return true;
 }
 
-std::vector<timeval> AMD_pwr_time;
-std::vector <cl_float> AMD_pwr0[5]; //Socket 0
+std::vector<double> AMD_pwr_time;
+std::vector<cl_float> AMD_pwr0[5]; //Socket 0
 
 bool AMD_log_pwr = false;
 cl_uint AMD_p_rate;
@@ -120,21 +120,19 @@ void AMD_log_pwr_func()
 	//	cout<< nbrSamples<<" / "<< AMDP_names.size() <<endl;
 	//	if (nbrSamples== AMDP_names.size())
 		{
-            // for (size_t i = 0; i < AMDP_names.size(); i++) //THERE IS A BUG HERE SOMEWHERE
+      // for (size_t i = 0; i < AMDP_names.size(); i++) //THERE IS A BUG HERE SOMEWHERE
 			for (size_t i = 0; i < 1; i++)
-			 {
+			{
 				 AMD_pwr0[i].push_back(pSampleData[i].m_counterValues->m_data);
-			 }
-			 AMD_pwr_time.push_back(rawtime);
+			}
+			AMD_pwr_time.push_back(timeval2storage(rawtime));
 		}
-
 	}
-
 
 	AMDTPwrStopProfiling();
 }
 
-#endif
+#endif // USEAMDP
 
 #if defined(USEIRAPL)
 #include "rapl.h"
@@ -184,7 +182,7 @@ void is_log_pwr_func()
 	}
 }
 
-#endif
+#endif // USEIRAPL
 
 
 #if defined(_WIN32)
@@ -257,8 +255,8 @@ void is_log_pwr_func()
 }
 
 
-#endif
-#endif
+#endif // USEIPG
+#endif // USEIPG
 
 
 #if defined(USENVML)
@@ -334,7 +332,7 @@ void nv_log_tmp_func()
   }
 }
 
-#endif
+#endif // USENVML
 
 
 #if defined(_WIN32)
@@ -750,7 +748,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
 #if defined(USEAMDP)
   cout << "Using AMD Power Profiling interface..." << endl << endl;
-  if (AMD_log_pwr == true)
+  if (AMD_log_pwr)
   {
 	  h5_create_dir(out_name, "/Housekeeping");
 	  h5_create_dir(out_name, "/Housekeeping/AMD");
@@ -762,22 +760,29 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
 #if defined(USENVML)
   cout << "Using NVML interface..." << endl << endl;
+  if (nv_log_pwr || nv_log_tmp)
+  {
+    h5_create_dir(out_name, "/Housekeeping/Nvidia");
+  }
   std::thread nv_log_pwr_thread(nv_log_pwr_func);
   std::thread nv_log_tmp_thread(nv_log_tmp_func);
 #endif
 
 #if defined(USEIPG)
-  h5_create_dir(out_name, "/Housekeeping");
-  h5_create_dir(out_name, "/Housekeeping/Intel");
-  if (is_log_pwr==true)
+  if (is_log_pwr || is_log_tmp)
   {
+    h5_create_dir(out_name, "/Housekeeping");
+    h5_create_dir(out_name, "/Housekeeping/Intel");
+  }
 
+  if (is_log_pwr)
+  {
 	  if (energyLib.IntelEnergyLibInitialize() == false)
 	  {
 		  cout << "Intel Power Gadget interface error!" << endl;
 		  return -1;
 	  }
-      cout << "Using Intel Power Gadget interface..." << endl << endl;
+    cout << "Using Intel Power Gadget interface..." << endl << endl;
 
 	  double CPU_TDP = 0;
 	  energyLib.GetTDP(0,&CPU_TDP);
@@ -801,9 +806,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 		  int nData;
 		  wchar_t szName[MAX_PATH];
 
-          energyLib.GetMsrFunc(j, &funcID);
+      energyLib.GetMsrFunc(j, &funcID);
 		  energyLib.GetMsrName(j, szName);
-
 
 		  if ((funcID == 1)) {
 			  MSR.push_back(j);
@@ -832,23 +836,22 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	  }
 
   }
-	  std::thread is_log_pwr_thread(is_log_pwr_func);
-	  std::thread is_log_tmp_thread(is_log_tmp_func);
+	std::thread is_log_pwr_thread(is_log_pwr_func);
+	std::thread is_log_tmp_thread(is_log_tmp_func);
 
 #endif
 
 #if defined(USEIRAPL)
-	  h5_create_dir(out_name, "/Housekeeping");
-	  h5_create_dir(out_name, "/Housekeeping/Intel");
-	  if (is_log_pwr==true)
-      {
-		  rapl = new Rapl();
-          h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP", rapl->get_TDP());
-          cout << "Using Intel MSR interface..." << endl << endl;
-	  }
+  h5_create_dir(out_name, "/Housekeeping");
+  h5_create_dir(out_name, "/Housekeeping/Intel");
+  if (is_log_pwr)
+  {
+    rapl = new Rapl();
+    h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP", rapl->get_TDP());
+    cout << "Using Intel MSR interface..." << endl << endl;
+  }
 
-	  std::thread is_log_pwr_thread(is_log_pwr_func);
-
+  std::thread is_log_pwr_thread(is_log_pwr_func);
 
 #endif
 
@@ -899,24 +902,14 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
 
 #if defined(USEAMDP)
-    AMD_log_pwr = false;
-    AMD_log_pwr_thread.join();
+  AMD_log_pwr = false;
+  AMD_log_pwr_thread.join();
 
 	if (AMD_p_rate > 0)
 	{
-		std::vector<std::string> time_strings;
-
-		for (size_t i = 0; i < AMD_pwr_time.size() ; i++) {
-			char time_buffer[100];
-			time_t temp = AMD_pwr_time.at(i).tv_sec;
-			timeinfo = localtime(&temp);
-			strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
-			sprintf(time_buffer, "%s:%03ld", time_buffer, AMD_pwr_time.at(i).tv_usec / 1000);
-			time_strings.push_back(time_buffer);
-		}
-
-		h5_write_strings(out_name, "/Housekeeping/AMD/Power_Time", time_strings);
-		time_strings.clear();
+    h5_write_buffer<double>(out_name, "/Housekeeping/AMD/Power_Time", AMD_pwr_time.data(), AMD_pwr_time.size()/*,
+                            // TODO: add this description if the possibility implemented in master is merged
+                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)"*/);
 
 		for (size_t i = 0; i < AMDP_names.size(); i++)
 		{
@@ -1013,8 +1006,6 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   nv_log_tmp = false;
   nv_log_pwr_thread.join();
   nv_log_tmp_thread.join();
-
-  h5_create_dir(out_name, "/Housekeeping/Nvidia");
 
   if (nv_p_rate > 0) {
 
