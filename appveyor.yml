@@ -110,13 +110,14 @@ build_script:
   - sh: sudo modprobe msr
   - sh: cd test
   - sh: sudo ../bin/toolkitICL -b -isp 1000 -c repetition_test.h5
-  - sh: h5ls out_repetition_test.h5/Intel_HK
-  - sh: h5dump -d Intel_HK/Cores0 out_repetition_test.h5
-  - sh: h5dump -d Intel_HK/DRAM0 out_repetition_test.h5
-  # - sh: h5dump -d Intel_HK/GT0 out_repetition_test.h5 # not required on all machines
-  - sh: h5dump -d Intel_HK/Package0 out_repetition_test.h5
-  - sh: h5dump -d Intel_HK/Power_Time out_repetition_test.h5
-  - sh: h5dump -d Intel_HK/TDP out_repetition_test.h5
+  - sh: h5ls out_repetition_test.h5/Housekeeping
+  - sh: h5ls out_repetition_test.h5/Housekeeping/Intel
+  - sh: h5dump -d Housekeeping/Intel/Cores0 out_repetition_test.h5
+  - sh: h5dump -d Housekeeping/Intel/DRAM0 out_repetition_test.h5
+  # - sh: h5dump -d Housekeeping/Intel/GT0 out_repetition_test.h5 # not required on all machines
+  - sh: h5dump -d Housekeeping/Intel/Package0 out_repetition_test.h5
+  - sh: h5dump -d Housekeeping/Intel/Power_Time out_repetition_test.h5
+  - sh: h5dump -d Housekeeping/Intel/TDP out_repetition_test.h5
   - sh: cd ..
     # display test log
   - sh: cat Testing/Temporary/LastTest.log
