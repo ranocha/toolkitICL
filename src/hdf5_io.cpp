@@ -207,8 +207,10 @@ bool h5_create_dir(char const* filename, char const* hdf_dir)
     return false;
   }
 
-  grp = H5Gcreate1(h5_file_id, hdf_dir, 0);
-  H5Gclose(grp);
+  if (H5LTpath_valid(h5_file_id, hdf_dir, true) <= 0) {
+    grp = H5Gcreate1(h5_file_id, hdf_dir, 0);
+    H5Gclose(grp);
+  }
   H5Fclose(h5_file_id);
 
   return true;

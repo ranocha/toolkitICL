@@ -721,7 +721,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   push_time = timer.getTimeMicroseconds() - push_time;
 
-  cout << "Setting range..." << endl;
+  cout << "Setting range..." << endl << endl;
 
   cl::NDRange range_start;
   cl::NDRange global_range;
@@ -750,11 +750,12 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   }
 
 #if defined(USEAMDP)
-  cout << "Using AMD Power Profiling interface..." << endl << endl;
   if (AMD_log_pwr)
   {
+    cout << "Using AMD Power Profiling interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
     h5_create_dir(out_name, "/Housekeeping/AMD");
+
     initAMDPP(AMD_p_rate);
   }
   std::thread AMD_log_pwr_thread(AMD_log_pwr_func);
@@ -762,9 +763,10 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 #endif
 
 #if defined(USENVML)
-  cout << "Using NVML interface..." << endl << endl;
   if (nv_log_pwr || nv_log_tmp)
   {
+    cout << "Using NVML interface..." << endl;
+    h5_create_dir(out_name, "/Housekeeping");
     h5_create_dir(out_name, "/Housekeeping/Nvidia");
   }
   std::thread nv_log_pwr_thread(nv_log_pwr_func);
@@ -774,6 +776,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 #if defined(USEIPG)
   if (is_log_pwr || is_log_tmp)
   {
+    cout << "Using Intel Power Gadget interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
     h5_create_dir(out_name, "/Housekeeping/Intel");
   }
@@ -785,7 +788,6 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
       cout << "Intel Power Gadget interface error!" << endl;
       return -1;
     }
-    cout << "Using Intel Power Gadget interface..." << endl << endl;
 
     double CPU_TDP = 0;
     energyLib.GetTDP(0,&CPU_TDP);
@@ -837,7 +839,6 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
       }
 
     }
-
   }
   std::thread is_log_pwr_thread(is_log_pwr_func);
   std::thread is_log_tmp_thread(is_log_tmp_func);
@@ -845,13 +846,14 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 #endif
 
 #if defined(USEIRAPL)
-  h5_create_dir(out_name, "/Housekeeping");
-  h5_create_dir(out_name, "/Housekeeping/Intel");
   if (is_log_pwr)
   {
+    cout << "Using Intel MSR interface..." << endl;
+    h5_create_dir(out_name, "/Housekeeping");
+    h5_create_dir(out_name, "/Housekeeping/Intel");
+
     rapl = new Rapl();
     h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP", rapl->get_TDP());
-    cout << "Using Intel MSR interface..." << endl << endl;
   }
 
   std::thread is_log_pwr_thread(is_log_pwr_func);
