@@ -26,20 +26,20 @@
 
 int gettimeofday(struct timeval * tp, struct timezone * tzp)
 {
-	static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
+  static const uint64_t EPOCH = ((uint64_t)116444736000000000ULL);
 
-	SYSTEMTIME  system_time;
-	FILETIME    file_time;
-	uint64_t    time;
+  SYSTEMTIME  system_time;
+  FILETIME    file_time;
+  uint64_t    time;
 
-	GetSystemTime(&system_time);
-	SystemTimeToFileTime(&system_time, &file_time);
-	time = ((uint64_t)file_time.dwLowDateTime);
-	time += ((uint64_t)file_time.dwHighDateTime) << 32;
+  GetSystemTime(&system_time);
+  SystemTimeToFileTime(&system_time, &file_time);
+  time = ((uint64_t)file_time.dwLowDateTime);
+  time += ((uint64_t)file_time.dwHighDateTime) << 32;
 
-	tp->tv_sec = (long)((time - EPOCH) / 10000000L);
-	tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
-	return 0;
+  tp->tv_sec = (long)((time - EPOCH) / 10000000L);
+  tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
+  return 0;
 }
 
 #else
@@ -67,33 +67,33 @@ using namespace std;
 std::vector<std::string> AMDP_names;
 
 bool initAMDPP(uint32_t sample_rate) {
-	AMDTResult hResult = AMDT_STATUS_OK;
+  AMDTResult hResult = AMDT_STATUS_OK;
 
-	// Initialize online mode
-	hResult = AMDTPwrProfileInitialize(AMDT_PWR_MODE_TIMELINE_ONLINE);
-	// check AMDT_STATUS_OK == hResult
-	AMDTUInt32 nbrCounters = 0;
-	AMDTPwrCounterDesc* pCounters = nullptr;
+  // Initialize online mode
+  hResult = AMDTPwrProfileInitialize(AMDT_PWR_MODE_TIMELINE_ONLINE);
+  // check AMDT_STATUS_OK == hResult
+  AMDTUInt32 nbrCounters = 0;
+  AMDTPwrCounterDesc* pCounters = nullptr;
 
-	hResult = AMDTPwrGetSupportedCounters(&nbrCounters, &pCounters);
-	// check AMDT_STATUS_OK == hResult
+  hResult = AMDTPwrGetSupportedCounters(&nbrCounters, &pCounters);
+  // check AMDT_STATUS_OK == hResult
 
-//	cout << endl << nbrCounters << endl;
-	for (AMDTUInt32 idx = 0; idx < nbrCounters; idx++)
-	{
-		AMDTPwrCounterDesc counterDesc = pCounters[idx];
+  //  cout << endl << nbrCounters << endl;
+  for (AMDTUInt32 idx = 0; idx < nbrCounters; idx++)
+  {
+    AMDTPwrCounterDesc counterDesc = pCounters[idx];
 
-		//get only energy - for now
-		if (counterDesc.m_category == AMDT_PWR_CATEGORY_CORRELATED_POWER) {
-			AMDTPwrEnableCounter(counterDesc.m_counterID);
+    //get only energy - for now
+    if (counterDesc.m_category == AMDT_PWR_CATEGORY_CORRELATED_POWER) {
+      AMDTPwrEnableCounter(counterDesc.m_counterID);
 
-			//cout << endl << counterDesc.m_name << endl;
-			AMDP_names.push_back(counterDesc.m_name);
-		}
+      //cout << endl << counterDesc.m_name << endl;
+      AMDP_names.push_back(counterDesc.m_name);
+    }
 
-	}
-	AMDTPwrSetTimerSamplingPeriod(sample_rate);
-	return true;
+  }
+  AMDTPwrSetTimerSamplingPeriod(sample_rate);
+  return true;
 }
 
 std::vector<double> AMD_pwr_time;
@@ -104,32 +104,32 @@ cl_uint AMD_p_rate;
 
 void AMD_log_pwr_func()
 {
-	AMDTPwrStartProfiling();
+  AMDTPwrStartProfiling();
 
-	while (AMD_log_pwr == true) {
+  while (AMD_log_pwr == true) {
 
-		timeval rawtime;
+    timeval rawtime;
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(AMD_p_rate));
-		gettimeofday(&rawtime, NULL);
+    std::this_thread::sleep_for(std::chrono::milliseconds(AMD_p_rate));
+    gettimeofday(&rawtime, NULL);
 
-		AMDTResult hResult = AMDT_STATUS_OK;
-		AMDTPwrSample* pSampleData = nullptr;
-		AMDTUInt32 nbrSamples = 0;
-		hResult = AMDTPwrReadAllEnabledCounters(&nbrSamples, &pSampleData);
-	//	cout<< nbrSamples<<" / "<< AMDP_names.size() <<endl;
-	//	if (nbrSamples== AMDP_names.size())
-		{
+    AMDTResult hResult = AMDT_STATUS_OK;
+    AMDTPwrSample* pSampleData = nullptr;
+    AMDTUInt32 nbrSamples = 0;
+    hResult = AMDTPwrReadAllEnabledCounters(&nbrSamples, &pSampleData);
+    //  cout<< nbrSamples<<" / "<< AMDP_names.size() <<endl;
+    //  if (nbrSamples== AMDP_names.size())
+    {
       // for (size_t i = 0; i < AMDP_names.size(); i++) //THERE IS A BUG HERE SOMEWHERE
-			for (size_t i = 0; i < 1; i++)
-			{
-				 AMD_pwr0[i].push_back(pSampleData[i].m_counterValues->m_data);
-			}
-			AMD_pwr_time.push_back(timeval2storage(rawtime));
-		}
-	}
+      for (size_t i = 0; i < 1; i++)
+      {
+         AMD_pwr0[i].push_back(pSampleData[i].m_counterValues->m_data);
+      }
+      AMD_pwr_time.push_back(timeval2storage(rawtime));
+    }
+  }
 
-	AMDTPwrStopProfiling();
+  AMDTPwrStopProfiling();
 }
 
 #endif // USEAMDP
@@ -147,39 +147,39 @@ Rapl *rapl;
 
 void is_log_pwr_func()
 {
-	timeval rawtime;
+  timeval rawtime;
 
-	if (is_p_rate > 0)
-	{
+  if (is_p_rate > 0)
+  {
     uint64_t pkg;
     uint64_t pp0;
     uint64_t pp1;
     uint64_t dram;
 
-		while (is_log_pwr == true) {
+    while (is_log_pwr == true) {
 
-			rapl->sample();
-			std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate/2));
-			gettimeofday(&rawtime, NULL);
-			std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate/2));
-			is_pwr_time.push_back(timeval2storage(rawtime));
+      rapl->sample();
+      std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate/2));
+      gettimeofday(&rawtime, NULL);
+      std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate/2));
+      is_pwr_time.push_back(timeval2storage(rawtime));
 
-			rapl->get_socket0_data(pkg,pp0,pp1,dram);
-		  is_pwr0[0].push_back(pkg);
-			is_pwr0[1].push_back(pp0);
+      rapl->get_socket0_data(pkg,pp0,pp1,dram);
+      is_pwr0[0].push_back(pkg);
+      is_pwr0[1].push_back(pp0);
       is_pwr0[2].push_back(dram);
-			is_pwr0[3].push_back(pp1);
+      is_pwr0[3].push_back(pp1);
 
-			if (rapl->detect_socket1() == true) {
-			    rapl->get_socket1_data(pkg,pp0,pp1,dram);
-		        is_pwr1[0].push_back(pkg);
-			    is_pwr1[1].push_back(pp0);
-                is_pwr1[2].push_back(dram);
-			    is_pwr1[3].push_back(pp1);
-			}
+      if (rapl->detect_socket1() == true) {
+        rapl->get_socket1_data(pkg,pp0,pp1,dram);
+        is_pwr1[0].push_back(pkg);
+        is_pwr1[1].push_back(pp0);
+        is_pwr1[2].push_back(dram);
+        is_pwr1[3].push_back(pp1);
+      }
 
-		}
-	}
+    }
+  }
 }
 
 #endif // USEIRAPL
@@ -191,8 +191,8 @@ void is_log_pwr_func()
 
 std::string utf16ToUtf8(const std::wstring& utf16Str)
 {
-	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-	return conv.to_bytes(utf16Str);
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+  return conv.to_bytes(utf16Str);
 }
 
 CIntelPowerGadgetLib energyLib;
@@ -206,52 +206,52 @@ bool is_log_tmp = false;
 cl_uint is_p_rate = 0;
 cl_uint is_t_rate = 0;
 
-std::vector <float> is_pwr[5];
-std::vector <int> is_tmp;
+std::vector<float> is_pwr[5];
+std::vector<int> is_tmp;
 
 void is_log_tmp_func()
 {
-	int Data;
-	timeval rawtime;
+  int Data;
+  timeval rawtime;
 
-	if (is_t_rate > 0)
-	{
-		is_tmp_time.clear();
+  if (is_t_rate > 0)
+  {
+    is_tmp_time.clear();
 
-		while (is_log_tmp == true) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(is_t_rate));
-			energyLib.GetTemperature(0, &Data);
-			gettimeofday(&rawtime, NULL);
-			is_tmp_time.push_back(timeval2storage(rawtime));
-		  is_tmp.push_back(Data);
-		}
-	}
+    while (is_log_tmp == true) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(is_t_rate));
+      energyLib.GetTemperature(0, &Data);
+      gettimeofday(&rawtime, NULL);
+      is_tmp_time.push_back(timeval2storage(rawtime));
+      is_tmp.push_back(Data);
+    }
+  }
 }
 
 void is_log_pwr_func()
 {
-	double data[3];
-	int nData;
+  double data[3];
+  int nData;
   timeval rawtime;
 
-	if (is_p_rate>0)
-	{
-	  is_pwr_time.clear();
+  if (is_p_rate>0)
+  {
+    is_pwr_time.clear();
 
-		while (is_log_pwr == true) {
-		  std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate));
-		  energyLib.ReadSample();
-		  gettimeofday(&rawtime, NULL);
-		  is_pwr_time.push_back(timeval2storage(rawtime));
+    while (is_log_pwr == true) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate));
+      energyLib.ReadSample();
+      gettimeofday(&rawtime, NULL);
+      is_pwr_time.push_back(timeval2storage(rawtime));
 
-		  for (unsigned int i = 0; i < MSR.size(); i++) {
-			  energyLib.GetPowerData(0, MSR.at(i), data, &nData);
-			  is_pwr[i].push_back((float)data[0]);
-		  }
+      for (unsigned int i = 0; i < MSR.size(); i++) {
+        energyLib.GetPowerData(0, MSR.at(i), data, &nData);
+        is_pwr[i].push_back((float)data[0]);
+      }
 
-		}
+    }
 
-	}
+  }
 }
 
 
@@ -453,15 +453,15 @@ void print_help()
        << "  -nt sample_rate: " << "Log Nvidia GPU temperature with sample_rate (ms)" << endl
 #endif
 #if defined(USEIPG)
-	  << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
-	  << "  -it  sample_rate: " << "Log Intel package temperature with sample_rate (ms)" << endl
+    << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
+    << "  -it  sample_rate: " << "Log Intel package temperature with sample_rate (ms)" << endl
 #endif
 #if defined(USEIRAPL)
-	  << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
+    << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
 #endif
 
 #if defined(USEAMDP)
-	  << "  -acp sample_rate: " << "Log AMD CPU power consumption with sample_rate (ms)" << endl
+    << "  -acp sample_rate: " << "Log AMD CPU power consumption with sample_rate (ms)" << endl
 #endif
        << endl;
 }
@@ -506,28 +506,28 @@ int main(int argc, char *argv[]) {
 #endif
 #if defined(USEIPG)
   if (cmdOptionExists(argv, argv + argc, "-isp")) {
-	  char const* tmp = getCmdOption(argv, argv + argc, "-isp");
-	  is_p_rate = atoi(tmp);
-	  is_log_pwr = true;
+    char const* tmp = getCmdOption(argv, argv + argc, "-isp");
+    is_p_rate = atoi(tmp);
+    is_log_pwr = true;
   }
 if (cmdOptionExists(argv, argv + argc, "-it")) {
-	 char const* tmp = getCmdOption(argv, argv + argc, "-it");
-	 is_t_rate = atoi(tmp);
-	 is_log_tmp = true;
+   char const* tmp = getCmdOption(argv, argv + argc, "-it");
+   is_t_rate = atoi(tmp);
+   is_log_tmp = true;
   }
 #endif
 #if defined(USEIRAPL)
   if (cmdOptionExists(argv, argv + argc, "-isp")) {
-	  char const* tmp = getCmdOption(argv, argv + argc, "-isp");
-	  is_p_rate = atoi(tmp);
-	  is_log_pwr = true;
+    char const* tmp = getCmdOption(argv, argv + argc, "-isp");
+    is_p_rate = atoi(tmp);
+    is_log_pwr = true;
   }
 #endif
 #if defined(USEAMDP)
   if (cmdOptionExists(argv, argv + argc, "-acp")) {
-	  char const* tmp = getCmdOption(argv, argv + argc, "-acp");
-	  AMD_p_rate = atoi(tmp);
-	  AMD_log_pwr = true;
+    char const* tmp = getCmdOption(argv, argv + argc, "-acp");
+    AMD_p_rate = atoi(tmp);
+    AMD_log_pwr = true;
   }
 #endif
   ocl_dev_mgr& dev_mgr = ocl_dev_mgr::getInstance();
@@ -750,9 +750,9 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   cout << "Using AMD Power Profiling interface..." << endl << endl;
   if (AMD_log_pwr)
   {
-	  h5_create_dir(out_name, "/Housekeeping");
-	  h5_create_dir(out_name, "/Housekeeping/AMD");
-	  initAMDPP(AMD_p_rate);
+    h5_create_dir(out_name, "/Housekeeping");
+    h5_create_dir(out_name, "/Housekeeping/AMD");
+    initAMDPP(AMD_p_rate);
   }
   std::thread AMD_log_pwr_thread(AMD_log_pwr_func);
 
@@ -777,67 +777,67 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   if (is_log_pwr)
   {
-	  if (energyLib.IntelEnergyLibInitialize() == false)
-	  {
-		  cout << "Intel Power Gadget interface error!" << endl;
-		  return -1;
-	  }
+    if (energyLib.IntelEnergyLibInitialize() == false)
+    {
+      cout << "Intel Power Gadget interface error!" << endl;
+      return -1;
+    }
     cout << "Using Intel Power Gadget interface..." << endl << endl;
 
-	  double CPU_TDP = 0;
-	  energyLib.GetTDP(0,&CPU_TDP);
-	  h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP" , (uint32_t)round(CPU_TDP));
+    double CPU_TDP = 0;
+    energyLib.GetTDP(0,&CPU_TDP);
+    h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP" , (uint32_t)round(CPU_TDP));
 
-	  int numCPUnodes = 0;
-	  energyLib.GetNumNodes(&numCPUnodes);
+    int numCPUnodes = 0;
+    energyLib.GetNumNodes(&numCPUnodes);
 
-	  int numMsrs = 0;
-	  energyLib.GetNumMsrs(&numMsrs);
+    int numMsrs = 0;
+    energyLib.GetNumMsrs(&numMsrs);
 
-	  //This is necesarry for initalization
-	  energyLib.ReadSample();
-	  energyLib.ReadSample();
-	  energyLib.ReadSample();
+    //This is necesarry for initalization
+    energyLib.ReadSample();
+    energyLib.ReadSample();
+    energyLib.ReadSample();
 
-	  for (int j = 0; j < numMsrs; j++)
-	  {
-		  int funcID;
-		  double data[3];
-		  int nData;
-		  wchar_t szName[MAX_PATH];
+    for (int j = 0; j < numMsrs; j++)
+    {
+      int funcID;
+      double data[3];
+      int nData;
+      wchar_t szName[MAX_PATH];
 
       energyLib.GetMsrFunc(j, &funcID);
-		  energyLib.GetMsrName(j, szName);
+      energyLib.GetMsrName(j, szName);
 
-		  if ((funcID == 1)) {
-			  MSR.push_back(j);
-			  if (utf16ToUtf8(szName) == "Processor") {
-				  MSR_names.push_back("Package");
-			  }
-			  else {
-				  if (utf16ToUtf8(szName) == "IA") {
-					  MSR_names.push_back("Cores");
-				  }
-				  else {
-					  MSR_names.push_back(utf16ToUtf8(szName));
-				  }
-			  }
-		  }
+      if ((funcID == 1)) {
+        MSR.push_back(j);
+        if (utf16ToUtf8(szName) == "Processor") {
+          MSR_names.push_back("Package");
+        }
+        else {
+          if (utf16ToUtf8(szName) == "IA") {
+            MSR_names.push_back("Cores");
+          }
+          else {
+            MSR_names.push_back(utf16ToUtf8(szName));
+          }
+        }
+      }
 
-		  //Get Package Power Limit
-		  if ((funcID == 3) ) {
-			  double data[3];
-			  int nData;
-			  energyLib.GetPowerData(0, j, data, &nData);
-			  std::string varname = "/Housekeeping/Intel/" +  utf16ToUtf8(szName) + "_Power_Limit";
-			  h5_write_single<double>(out_name, varname.c_str() , data[0]);
-		  }
+      //Get Package Power Limit
+      if ((funcID == 3) ) {
+        double data[3];
+        int nData;
+        energyLib.GetPowerData(0, j, data, &nData);
+        std::string varname = "/Housekeeping/Intel/" +  utf16ToUtf8(szName) + "_Power_Limit";
+        h5_write_single<double>(out_name, varname.c_str() , data[0]);
+      }
 
-	  }
+    }
 
   }
-	std::thread is_log_pwr_thread(is_log_pwr_func);
-	std::thread is_log_tmp_thread(is_log_tmp_func);
+  std::thread is_log_pwr_thread(is_log_pwr_func);
+  std::thread is_log_tmp_thread(is_log_tmp_func);
 
 #endif
 
@@ -905,33 +905,33 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   AMD_log_pwr = false;
   AMD_log_pwr_thread.join();
 
-	if (AMD_p_rate > 0)
-	{
+  if (AMD_p_rate > 0)
+  {
     h5_write_buffer<double>(out_name, "/Housekeeping/AMD/Power_Time", AMD_pwr_time.data(), AMD_pwr_time.size()/*,
                             // TODO: add this description if the possibility implemented in master is merged
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)"*/);
 
-		for (size_t i = 0; i < AMDP_names.size(); i++)
-		{
-			std::string varname = "/Housekeeping/AMD/" + AMDP_names.at(i);
-			h5_write_buffer<cl_float>(out_name, varname.c_str(), AMD_pwr0[i].data(), AMD_pwr0[i].size());
-		}
-	}
+    for (size_t i = 0; i < AMDP_names.size(); i++)
+    {
+      std::string varname = "/Housekeeping/AMD/" + AMDP_names.at(i);
+      h5_write_buffer<cl_float>(out_name, varname.c_str(), AMD_pwr0[i].data(), AMD_pwr0[i].size());
+    }
+  }
 #endif
 
 #if defined(USEIRAPL)
 
-	is_log_pwr = false;
-	is_log_pwr_thread.join();
+  is_log_pwr = false;
+  is_log_pwr_thread.join();
 
   if (is_p_rate > 0)
   {
     // size()-1 because differences are computed later
-	  h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", is_pwr_time.data(), is_pwr_time.size()-1/*,
+    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", is_pwr_time.data(), is_pwr_time.size()-1/*,
                             // TODO: add this description if the possibility implemented in master is merged
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)"*/);
 
-	  std::vector<double> tmp_vector;
+    std::vector<double> tmp_vector;
 
     size_t max_entries = MSR_names.size();
     if (rapl->detect_igp() == false) {
