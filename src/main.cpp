@@ -48,6 +48,87 @@ int gettimeofday(struct timeval * tp, struct timezone * tzp)
 
 using namespace std;
 
+#if defined(USEAMDP)
+// Disable MS compiler warnings:
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+// Include controller API header file.
+#include "AMDTPowerProfileApi.h"
+
+std::vector<std::string> AMDP_names;
+
+bool initAMDPP(uint32_t sample_rate) {
+	AMDTResult hResult = AMDT_STATUS_OK;
+
+	// Initialize online mode
+	hResult = AMDTPwrProfileInitialize(AMDT_PWR_MODE_TIMELINE_ONLINE);
+	// check AMDT_STATUS_OK == hResult
+	AMDTUInt32 nbrCounters = 0;
+	AMDTPwrCounterDesc* pCounters = nullptr;
+
+	hResult = AMDTPwrGetSupportedCounters(&nbrCounters, &pCounters);
+	// check AMDT_STATUS_OK == hResult
+
+//	cout << endl << nbrCounters << endl;
+	for (AMDTUInt32 idx = 0; idx < nbrCounters; idx++)
+	{
+		AMDTPwrCounterDesc counterDesc = pCounters[idx];
+
+		//get only energy - for now
+		if (counterDesc.m_category == AMDT_PWR_CATEGORY_CORRELATED_POWER) {
+			AMDTPwrEnableCounter(counterDesc.m_counterID);
+
+			//cout << endl << counterDesc.m_name << endl;
+			AMDP_names.push_back(counterDesc.m_name);
+		}
+
+	}
+	AMDTPwrSetTimerSamplingPeriod(sample_rate);
+	return true;
+}
+
+std::vector<timeval> AMD_pwr_time;
+std::vector <cl_float> AMD_pwr0[5]; //Socket 0
+
+bool AMD_log_pwr = false;
+cl_uint AMD_p_rate;
+
+void AMD_log_pwr_func()
+{
+	AMDTPwrStartProfiling();
+
+	while (AMD_log_pwr == true) {
+
+		timeval rawtime;
+	
+		std::this_thread::sleep_for(std::chrono::milliseconds(AMD_p_rate));
+		gettimeofday(&rawtime, NULL);
+        
+		AMDTResult hResult = AMDT_STATUS_OK;
+		AMDTPwrSample* pSampleData = nullptr;
+		AMDTUInt32 nbrSamples = 0;
+		hResult = AMDTPwrReadAllEnabledCounters(&nbrSamples, &pSampleData);
+	//	cout<< nbrSamples<<" / "<< AMDP_names.size() <<endl;
+	//	if (nbrSamples== AMDP_names.size())
+		{
+            // for (size_t i = 0; i < AMDP_names.size(); i++) //THERE IS A BUG HERE SOMEWHERE
+			for (size_t i = 0; i < 1; i++)
+			 {
+				 AMD_pwr0[i].push_back(pSampleData[i].m_counterValues->m_data);
+			 }
+			 AMD_pwr_time.push_back(rawtime);
+		}
+		
+	}
+
+
+	AMDTPwrStopProfiling();
+}
+
+#endif 
+
 #if defined(USEIRAPL)
 #include "rapl.h"
 bool is_log_pwr = false;
@@ -88,9 +169,9 @@ void is_log_pwr_func()
 			
 			if (rapl->detect_socket1() == true){
 			    rapl->get_socket1_data(pkg,pp0,pp1,dram);
-		      is_pwr1[0].push_back(pkg);
+		        is_pwr1[0].push_back(pkg);
 			    is_pwr1[1].push_back(pp0);
-          is_pwr1[2].push_back(dram);
+                is_pwr1[2].push_back(dram);
 			    is_pwr1[3].push_back(pp1);
 			    
 			}
@@ -379,6 +460,10 @@ void print_help()
 #if defined(USEIRAPL)
 	  << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
 #endif
+
+#if defined(USEAMDP)
+	  << "  -acp sample_rate: " << "Log AMD CPU power consumption with sample_rate (ms)" << endl
+#endif
        << endl;
 }
 
@@ -437,6 +522,13 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	  char const* tmp = getCmdOption(argv, argv + argc, "-isp");
 	  is_p_rate = atoi(tmp);
 	  is_log_pwr = true;
+  }
+#endif
+#if defined(USEAMDP)
+  if (cmdOptionExists(argv, argv + argc, "-acp")) {
+	  char const* tmp = getCmdOption(argv, argv + argc, "-acp");
+	  AMD_p_rate = atoi(tmp);
+	  AMD_log_pwr = true;
   }
 #endif
   ocl_dev_mgr& dev_mgr = ocl_dev_mgr::getInstance();
@@ -655,6 +747,18 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
     local_range = cl::NDRange(tmp_range[0], tmp_range[1], tmp_range[2]);
   }
 
+#if defined(USEAMDP)
+  cout << "Using AMD Power Profiling interface..." << endl << endl;
+  if (AMD_log_pwr == true)
+  {
+	  h5_create_dir(out_name, "/Housekeeping");
+	  h5_create_dir(out_name, "/Housekeeping/AMD");
+	  initAMDPP(AMD_p_rate);
+  }
+  std::thread AMD_log_pwr_thread(AMD_log_pwr_func);
+
+#endif
+
 #if defined(USENVML)
   cout << "Using NVML interface..." << endl << endl;
   std::thread nv_log_pwr_thread(nv_log_pwr_func);
@@ -662,8 +766,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 #endif
 
 #if defined(USEIPG)
-  h5_create_dir(out_name, "/Intel_HK");
-
+  h5_create_dir(out_name, "/Housekeeping");
+  h5_create_dir(out_name, "/Housekeeping/Intel");
   if (is_log_pwr==true)
   {
 	 
@@ -676,7 +780,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	  
 	  double CPU_TDP = 0;
 	  energyLib.GetTDP(0,&CPU_TDP);
-	  h5_write_single<uint32_t>(out_name, "/Intel_HK/TDP" , (uint32_t)round(CPU_TDP));
+	  h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP" , (uint32_t)round(CPU_TDP));
 	  
 	  int numCPUnodes = 0;
 	  energyLib.GetNumNodes(&numCPUnodes);
@@ -720,7 +824,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 			  double data[3];
 			  int nData;
 			  energyLib.GetPowerData(0, j, data, &nData);
-			  std::string varname = "/Intel_HK/" +  utf16ToUtf8(szName) + "_Power_Limit";
+			  std::string varname = "/Housekeeping/Intel/" +  utf16ToUtf8(szName) + "_Power_Limit";
 			  h5_write_single<double>(out_name, varname.c_str() , data[0]);
 		  }
 
@@ -733,11 +837,12 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 #endif
 
 #if defined(USEIRAPL)
-      h5_create_dir(out_name, "/Intel_HK");
+	  h5_create_dir(out_name, "/Housekeeping");
+	  h5_create_dir(out_name, "/Housekeeping/Intel");
 	  if (is_log_pwr==true)
       {
 		  rapl = new Rapl();
-          h5_write_single<uint32_t>(out_name, "/Intel_HK/TDP", rapl->get_TDP());
+          h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP", rapl->get_TDP());
           cout << "Using Intel MSR interface..." << endl << endl;
 	  }
  
@@ -745,6 +850,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	  
   
 #endif
+
 
   if (benchmark_mode == true) {
     cout << "Sleeping for 4s" << endl << endl;
@@ -792,6 +898,34 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
  cout << "Saving results... " << endl;
 
 
+#if defined(USEAMDP)
+    AMD_log_pwr = false;
+    AMD_log_pwr_thread.join();
+
+	if (AMD_p_rate > 0)
+	{
+		std::vector<std::string> time_strings;
+
+		for (size_t i = 0; i < AMD_pwr_time.size() ; i++) {
+			char time_buffer[100];
+			time_t temp = AMD_pwr_time.at(i).tv_sec;
+			timeinfo = localtime(&temp);
+			strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+			sprintf(time_buffer, "%s:%03ld", time_buffer, AMD_pwr_time.at(i).tv_usec / 1000);
+			time_strings.push_back(time_buffer);
+		}
+
+		h5_write_strings(out_name, "/Housekeeping/AMD/Power_Time", time_strings);
+		time_strings.clear();
+
+		for (size_t i = 0; i < AMDP_names.size(); i++)
+		{
+			std::string varname = "/Housekeeping/AMD/" + AMDP_names.at(i);
+			h5_write_buffer<cl_float>(out_name, varname.c_str(), AMD_pwr0[i].data(), AMD_pwr0[i].size());
+		}
+	}
+#endif
+
 #if defined(USEIRAPL)
 
 	 is_log_pwr = false;
@@ -810,7 +944,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 		 time_strings.push_back(time_buffer);
 	 }
 
-	 h5_write_strings(out_name, "/Intel_HK/Power_Time", time_strings);
+	 h5_write_strings(out_name, "/Housekeeping/Intel/Power_Time", time_strings);
 	 time_strings.clear();
 	 
 	std::vector<double> tmp_vector;
@@ -830,7 +964,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	     {
 	        tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr0[i].at(j+1)-is_pwr0[i].at(j)))/((double)is_p_rate*0.001));
 	     }
-		 std::string varname = "/Intel_HK/" + MSR_names.at(i) + "0";
+		 std::string varname = "/Housekeeping/Intel/" + MSR_names.at(i) + "0";
 		 h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
 	 }
 	 
@@ -845,7 +979,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 	     {
 	        tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr1[i].at(j+1)-is_pwr1[i].at(j)))/((double)is_p_rate*0.001));
 	     }
-		 std::string varname = "/Intel_HK/" + MSR_names.at(i) + "1";
+		 std::string varname = "/Housekeeping/Intel/" + MSR_names.at(i) + "1";
 		 h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
 	 }
 	 
@@ -876,12 +1010,12 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 		 time_strings.push_back(time_buffer);
 	 }
 
-	 h5_write_strings(out_name, "/Intel_HK/Power_Time", time_strings);
+	 h5_write_strings(out_name, "/Housekeeping/Intel/Power_Time", time_strings);
 	 time_strings.clear();
 
 	 for (size_t i = 0; i < MSR_names.size(); i++)
 	 {
-		 std::string varname = "/Intel_HK/" + MSR_names.at(i) + "0";
+		 std::string varname = "/Housekeeping/Intel/" + MSR_names.at(i) + "0";
 		 h5_write_buffer<cl_float>(out_name, varname.c_str(), is_pwr[i].data(), is_pwr[i].size());
 	 }
 
@@ -900,10 +1034,10 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 		 time_strings.push_back(time_buffer);
 	 }
 
-	 h5_write_strings(out_name, "/Intel_HK/Temperature_Time", time_strings);
+	 h5_write_strings(out_name, "/Housekeeping/Intel_HK/Temperature_Time", time_strings);
 	 time_strings.clear();
 
-	 h5_write_buffer<cl_int>(out_name, "/Intel_HK/Package_Temperature", is_tmp.data(), is_tmp.size());
+	 h5_write_buffer<cl_int>(out_name, "/Housekeeping/Intel_HK/Package_Temperature", is_tmp.data(), is_tmp.size());
 
  }
 
@@ -917,11 +1051,11 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   std::vector<std::string> time_strings;
 
-  h5_create_dir(out_name, "/NV_HK");
+  h5_create_dir(out_name, "/Housekeeping/NV_HK");
 
   if (nv_p_rate>0) {
 
-    h5_write_buffer<cl_uint>(out_name, "/NV_HK/NV_Power", nv_pwr.data(), nv_pwr.size());
+    h5_write_buffer<cl_uint>(out_name, "/Housekeeping/NV_HK/NV_Power", nv_pwr.data(), nv_pwr.size());
 
     for(size_t i = 0; i < nv_pwr_time.size(); i++) {
       char time_buffer[100];
@@ -932,13 +1066,13 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
       time_strings.push_back(time_buffer);
     }
 
-    h5_write_strings(out_name, "/NV_HK/Power_Time", time_strings);
+    h5_write_strings(out_name, "/Housekeeping/NV_HK/Power_Time", time_strings);
     time_strings.clear();
   }
 
   if (nv_t_rate>0) {
 
-    h5_write_buffer<cl_ushort>(out_name, "/NV_HK/NV_Temperature", nv_tmp.data(), nv_tmp.size());
+    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/NV_HK/NV_Temperature", nv_tmp.data(), nv_tmp.size());
 
     for(size_t i = 0; i < nv_tmp_time.size(); i++) {
       char time_buffer[100];
@@ -949,7 +1083,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
       time_strings.push_back(time_buffer);
     }
 
-    h5_write_strings(out_name, "/NV_HK/NV_Temperature_Time", time_strings);
+    h5_write_strings(out_name, "/Housekeeping/NV_HK/NV_Temperature_Time", time_strings);
     time_strings.clear();
   }
 #endif

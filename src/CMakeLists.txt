@@ -13,6 +13,11 @@ set(HEADER ../include/opencl_include.hpp ../include/ocl_dev_mgr.hpp ../include/t
 ENDIF(USEIPG)
 ENDIF(USEIRAPL)
 
+IF(USEAMDP)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${OpenCL_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} $ENV{AMDPROFILERPATH}/../include ../include)
+set(HEADER ../include/opencl_include.hpp ../include/ocl_dev_mgr.hpp ../include/timer.hpp ../include/util.hpp ../include/rapl.h)
+ENDIF(USEAMDP)
+
 IF(USEIRAPL)
 set(SOURCES main.cpp ocl_dev_mgr.cpp rapl.cpp ${HEADER})
 ELSE(USEIRAPL)
@@ -34,8 +39,14 @@ IF(USENVML)
     link_directories(${OpenCL_LIBRARIES} ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES} ${CUDA_TOOLKIT_ROOT_DIR}/lib/x86_64-linux-gnu/stubs/)
   ENDIF(MSVC)
 ELSE()
-  link_directories(${OpenCL_LIBRARIES} ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES})
+    IF(USEAMDP)
+        link_directories(${OpenCL_LIBRARIES} ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES} $ENV{AMDPROFILERPATH})
+    ELSE()
+        link_directories(${OpenCL_LIBRARIES} ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES})
+    ENDIF(USEAMDP)
 ENDIF()
+
+
 
 # set output directory for executable
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -51,5 +62,9 @@ IF(USENVML)
     TARGET_LINK_LIBRARIES(toolkitICL ${OpenCL_LIBRARIES} ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES} libnvidia-ml.so)
   ENDIF()
 ELSE()
-  TARGET_LINK_LIBRARIES(toolkitICL ${OpenCL_LIBRARIES} ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES})
+  IF(USEAMDP)
+ TARGET_LINK_LIBRARIES(toolkitICL ${OpenCL_LIBRARIES} ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES} AMDPowerProfileAPI.lib) 
+  ELSE(USEAMDP)
+  TARGET_LINK_LIBRARIES(toolkitICL ${OpenCL_LIBRARIES} ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES}) 
+  ENDIF(USEAMDP)
 ENDIF()

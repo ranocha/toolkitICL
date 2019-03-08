@@ -3,6 +3,14 @@
 cmake_minimum_required (VERSION 3.5)
 PROJECT(toolkitICL)
 
+if(DEFINED ENV{AMDPROFILERPATH})
+    message(STATUS "Found AMD profiling driver")
+	option(USEAMDP "Use AMD Profiling" ON)
+	 add_definitions(-DUSEAMDP)
+ELSE()
+	option(USEAMDP "Use AMD Profiling" OFF)
+endif()
+
 find_package(CUDA)
 
 IF(CUDA_FOUND)
