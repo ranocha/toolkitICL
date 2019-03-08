@@ -869,13 +869,11 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   cout << "Launching kernel..." << endl;
 
-  time_t rawtime;
-  struct tm * timeinfo;
-
+ 
+  timeval start_timeinfo;
+ 
   //get execution timestamp
-  time(&rawtime);
-  timeinfo = localtime(&rawtime);
-
+  gettimeofday(&start_timeinfo, NULL);
 
   uint64_t exec_time = 0;
   uint32_t kernels_run=0;
@@ -1027,9 +1025,10 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 #endif
 
 
-  char time_buffer[80];
-  strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
-
+  char time_buffer[90];
+  time_t tempt = start_timeinfo.tv_sec;
+  strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%H:%M:%S", localtime(&tempt));
+  sprintf(time_buffer, "%s:%03ld", time_buffer, start_timeinfo.tv_usec / 1000);
   h5_write_string(out_name, "Kernel_ExecStart", time_buffer);
   h5_write_string(out_name, "OpenCL_Device", dev_mgr.get_avail_dev_info(deviceIndex).name.c_str());
   h5_write_string(out_name, "OpenCL_Platform", dev_mgr.get_avail_dev_info(deviceIndex).platform_name.c_str());
