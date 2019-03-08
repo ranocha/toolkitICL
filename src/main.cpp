@@ -869,9 +869,9 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   cout << "Launching kernel..." << endl;
 
- 
+
   timeval start_timeinfo;
- 
+
   //get execution timestamp
   gettimeofday(&start_timeinfo, NULL);
 
@@ -1026,9 +1026,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
 
   char time_buffer[90];
-  time_t tempt = start_timeinfo.tv_sec;
-  strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%H:%M:%S", localtime(&tempt));
-  sprintf(time_buffer, "%s:%03ld", time_buffer, start_timeinfo.tv_usec / 1000);
+  strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%H:%M:%S", localtime(&(start_timeinfo.tv_sec)));
+  sprintf(time_buffer, "%s.%03ld", time_buffer, start_timeinfo.tv_usec / 1000);
   h5_write_string(out_name, "Kernel_ExecStart", time_buffer);
   h5_write_string(out_name, "OpenCL_Device", dev_mgr.get_avail_dev_info(deviceIndex).name.c_str());
   h5_write_string(out_name, "OpenCL_Platform", dev_mgr.get_avail_dev_info(deviceIndex).platform_name.c_str());
@@ -1098,7 +1097,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   pull_time = timer.getTimeMicroseconds() - pull_time;
   h5_write_single<double>(out_name, "Data_StoreTime", 1.e-6 * pull_time,
-                          "Time in milliseconds of the data transfer: device -> host -> hdf5 output file.");
+                          "Time in seconds of the data transfer: device -> host -> hdf5 output file.");
 
   return 0;
 }
