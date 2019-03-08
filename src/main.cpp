@@ -731,14 +731,17 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   cl_int tmp_range[3];
   h5_read_buffer<cl_int>(filename, "Global_Range", tmp_range);
   global_range = cl::NDRange(tmp_range[0], tmp_range[1], tmp_range[2]);
-  h5_write_buffer<cl_int>(out_name, "Global_Range", tmp_range, 3);
+  h5_write_buffer<cl_int>(out_name, "Global_Range", tmp_range, 3,
+                          "Argument `global_work_size` of the OpenCL function `clEnqueueNDRangeKernel`.");
 
   h5_read_buffer<cl_int>(filename, "Range_Start", tmp_range);
   range_start = cl::NDRange(tmp_range[0], tmp_range[1], tmp_range[2]);
-  h5_write_buffer<cl_int>(out_name, "Range_Start", tmp_range, 3);
+  h5_write_buffer<cl_int>(out_name, "Range_Start", tmp_range, 3,
+                          "Argument `global_work_offset` of the OpenCL function `clEnqueueNDRangeKernel`.");
 
   h5_read_buffer<cl_int>(filename, "Local_Range", tmp_range);
-  h5_write_buffer<cl_int>(out_name, "Local_Range", tmp_range, 3);
+  h5_write_buffer<cl_int>(out_name, "Local_Range", tmp_range, 3,
+                          "Argument `local_work_size` of the OpenCL function `clEnqueueNDRangeKernel`.");
   if ((tmp_range[0]==0) && (tmp_range[1]==0) && (tmp_range[2]==0)) {
     local_range = cl::NullRange;
   }
@@ -886,7 +889,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   }
 
   total_exec_time = timer.getTimeMicroseconds() - total_exec_time;
-  h5_write_single<double>(out_name, "Total_ExecTime", 1.e-6 * total_exec_time); // TODO: edit description -> seconds if merging with master
+  h5_write_single<double>(out_name, "Total_ExecTime", 1.e-6 * total_exec_time,
+                          "Time in seconds of the total execution (data transfer, kernel, and host code).");
 
   cout << "Kernels executed: " << kernels_run << endl;
   cout << "Kernel runtime: " << exec_time/1000 << " ms" << endl;
@@ -907,9 +911,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   if (AMD_p_rate > 0)
   {
-    h5_write_buffer<double>(out_name, "/Housekeeping/AMD/Power_Time", AMD_pwr_time.data(), AMD_pwr_time.size()/*,
-                            // TODO: add this description if the possibility implemented in master is merged
-                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)"*/);
+    h5_write_buffer<double>(out_name, "/Housekeeping/AMD/Power_Time", AMD_pwr_time.data(), AMD_pwr_time.size(),
+                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
     for (size_t i = 0; i < AMDP_names.size(); i++)
     {
@@ -927,9 +930,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   if (is_p_rate > 0)
   {
     // size()-1 because differences are computed later
-    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", is_pwr_time.data(), is_pwr_time.size()-1/*,
-                            // TODO: add this description if the possibility implemented in master is merged
-                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)"*/);
+    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", is_pwr_time.data(), is_pwr_time.size()-1,
+                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
     std::vector<double> tmp_vector;
 
@@ -979,9 +981,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   if (is_p_rate > 0)
   {
-    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", is_pwr_time.data(), is_pwr_time.size()/*,
-                            // TODO: add this description if the possibility implemented in master is merged
-                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)"*/);
+    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", is_pwr_time.data(), is_pwr_time.size(),
+                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
     for (size_t i = 0; i < MSR_names.size(); i++)
     {
@@ -992,9 +993,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   if (is_t_rate > 0)
   {
-    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Temperature_Time", is_tmp_time.data(), is_tmp_time.size()/*,
-                            // TODO: add this description if the possibility implemented in master is merged
-                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)"*/);
+    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Temperature_Time", is_tmp_time.data(), is_tmp_time.size(),
+                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
     h5_write_buffer<cl_int>(out_name, "/Housekeeping/Intel/Package_Temperature", is_tmp.data(), is_tmp.size());
   }
@@ -1011,18 +1011,16 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
     h5_write_buffer<cl_uint>(out_name, "/Housekeeping/Nvidia/Power", nv_pwr.data(), nv_pwr.size());
 
-    h5_write_buffer<double>(out_name, "/Housekeeping/Nvidia/Power_Time", nv_pwr_time.data(), nv_pwr_time.size()/*,
-                            // TODO: add this description if the possibility implemented in master is merged
-                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)"*/);
+    h5_write_buffer<double>(out_name, "/Housekeeping/Nvidia/Power_Time", nv_pwr_time.data(), nv_pwr_time.size(),
+                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
   }
 
   if (nv_t_rate > 0) {
 
     h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/Nvidia/Temperature", nv_tmp.data(), nv_tmp.size());
 
-    h5_write_buffer<double>(out_name, "/Housekeeping/Nvidia/Temperature_Time", nv_tmp_time.data(), nv_tmp_time.size()/*,
-                            // TODO: add this description if the possibility implemented in master is merged
-                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)"*/);
+    h5_write_buffer<double>(out_name, "/Housekeeping/Nvidia/Temperature_Time", nv_tmp_time.data(), nv_tmp_time.size(),
+                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
   }
 #endif
 
@@ -1032,9 +1030,12 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   h5_write_string(out_name, "Kernel_ExecStart", time_buffer);
   h5_write_string(out_name, "OpenCL_Device", dev_mgr.get_avail_dev_info(deviceIndex).name.c_str());
+  h5_write_string(out_name, "OpenCL_Platform", dev_mgr.get_avail_dev_info(deviceIndex).platform_name.c_str());
   h5_write_string(out_name, "OpenCL_Version", dev_mgr.get_avail_dev_info(deviceIndex).ocl_version.c_str());
-  h5_write_single<double>(out_name,"Kernel_ExecTime", 1.e-6 * exec_time); //TODO: description, seconds
-  h5_write_single<double>(out_name, "Data_LoadTime", 1.e-6 * push_time); //TODO: description, seconds
+  h5_write_single<double>(out_name, "Kernel_ExecTime", 1.e-6 * exec_time,
+                          "Time in seconds of the kernel execution (no host code).");
+  h5_write_single<double>(out_name, "Data_LoadTime", 1.e-6 * push_time,
+                          "Time in seconds of the data transfer: hdf5 input file -> host -> device.");
 
   h5_create_dir(out_name, "/Data");
 
@@ -1095,7 +1096,8 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   }
 
   pull_time = timer.getTimeMicroseconds() - pull_time;
-  h5_write_single<double>(out_name, "Data_StoreTime", 1.e-6 * pull_time); //TODO: description, seconds
+  h5_write_single<double>(out_name, "Data_StoreTime", 1.e-6 * pull_time,
+                          "Time in milliseconds of the data transfer: device -> host -> hdf5 output file.");
 
   return 0;
 }
