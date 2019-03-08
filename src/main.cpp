@@ -443,27 +443,27 @@ bool cmdOptionExists(char** begin, char** end, const std::string& option)
 
 void print_help()
 {
-  cout << "Usage: toolkitICL [options] -c config.h5" << endl
-       << "Options:" << endl
-       << "  -d device_id: " << "Use the device specified by `device_id`." << endl
-       << "  -b          : " << "Activate the benchmark mode (additional delay before & after runs)." << endl
-       << "  -c config.h5: " << "Specify the URL `config.h5` of the HDF5 configuration file." << endl
+  cout
+    << "Usage: toolkitICL [options] -c config.h5" << endl
+    << "Options:" << endl
+    << "  -d device_id: \n    Use the device specified by `device_id`." << endl
+    << "  -b: \n    Activate the benchmark mode (additional delay before & after runs)." << endl
+    << "  -c config.h5: \n    Specify the URL `config.h5` of the HDF5 configuration file." << endl
 #if defined(USENVML)
-       << "  -np sample_rate: " << "Log Nvidia GPU power consumption with sample_rate (ms)" << endl
-       << "  -nt sample_rate: " << "Log Nvidia GPU temperature with sample_rate (ms)" << endl
+    << "  -nvidia_power sample_rate: \n    Log Nvidia GPU power consumption with `sample_rate` (ms)" << endl
+    << "  -nvidia_temp sample_rate: \n    Log Nvidia GPU temperature with `sample_rate` (ms)" << endl
 #endif
 #if defined(USEIPG)
-    << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
-    << "  -it  sample_rate: " << "Log Intel package temperature with sample_rate (ms)" << endl
+    << "  -intel_power sample_rate: \n    Log Intel system power consumption with `sample_rate` (ms)" << endl
+    << "  -intel_temp  sample_rate: \n    Log Intel package temperature with `sample_rate` (ms)" << endl
 #endif
 #if defined(USEIRAPL)
-    << "  -isp sample_rate: " << "Log Intel system power consumption with sample_rate (ms)" << endl
+    << "  -intel_power sample_rate: \n    Log Intel system power consumption with `sample_rate` (ms)" << endl
 #endif
-
 #if defined(USEAMDP)
-    << "  -acp sample_rate: " << "Log AMD CPU power consumption with sample_rate (ms)" << endl
+    << "  -amd_cpu_power sample_rate: \n    Log AMD CPU power consumption with `sample_rate` (ms)" << endl
 #endif
-       << endl;
+    << endl;
 }
 
 
@@ -492,40 +492,40 @@ int main(int argc, char *argv[]) {
   char const* filename = getCmdOption(argv, argv + argc, "-c");
 
 #if defined(USENVML)
-  if (cmdOptionExists(argv, argv + argc, "-np")) {
-    char const* tmp = getCmdOption(argv, argv + argc, "-np");
+  if (cmdOptionExists(argv, argv + argc, "-nvidia_power")) {
+    char const* tmp = getCmdOption(argv, argv + argc, "-nvidia_power");
     nv_p_rate = atoi(tmp);
      nv_log_pwr = true;
   }
 
-  if (cmdOptionExists(argv, argv + argc, "-nt")) {
-    char const* tmp = getCmdOption(argv, argv + argc, "-nt");
+  if (cmdOptionExists(argv, argv + argc, "-nvidia_temp")) {
+    char const* tmp = getCmdOption(argv, argv + argc, "-nvidia_temp");
     nv_t_rate = atoi(tmp);
      nv_log_tmp = true;
   }
 #endif
 #if defined(USEIPG)
-  if (cmdOptionExists(argv, argv + argc, "-isp")) {
-    char const* tmp = getCmdOption(argv, argv + argc, "-isp");
+  if (cmdOptionExists(argv, argv + argc, "-intel_power")) {
+    char const* tmp = getCmdOption(argv, argv + argc, "-intel_power");
     is_p_rate = atoi(tmp);
     is_log_pwr = true;
   }
-if (cmdOptionExists(argv, argv + argc, "-it")) {
-   char const* tmp = getCmdOption(argv, argv + argc, "-it");
+if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
+   char const* tmp = getCmdOption(argv, argv + argc, "-intel_temp");
    is_t_rate = atoi(tmp);
    is_log_tmp = true;
   }
 #endif
 #if defined(USEIRAPL)
-  if (cmdOptionExists(argv, argv + argc, "-isp")) {
-    char const* tmp = getCmdOption(argv, argv + argc, "-isp");
+  if (cmdOptionExists(argv, argv + argc, "-intel_power")) {
+    char const* tmp = getCmdOption(argv, argv + argc, "-intel_power");
     is_p_rate = atoi(tmp);
     is_log_pwr = true;
   }
 #endif
 #if defined(USEAMDP)
-  if (cmdOptionExists(argv, argv + argc, "-acp")) {
-    char const* tmp = getCmdOption(argv, argv + argc, "-acp");
+  if (cmdOptionExists(argv, argv + argc, "-amd_cpu_power")) {
+    char const* tmp = getCmdOption(argv, argv + argc, "-amd_cpu_power");
     AMD_p_rate = atoi(tmp);
     AMD_log_pwr = true;
   }
@@ -754,7 +754,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   {
     cout << "Using AMD Power Profiling interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
-    h5_create_dir(out_name, "/Housekeeping/AMD");
+    h5_create_dir(out_name, "/Housekeeping/amd");
 
     initAMDPP(AMD_p_rate);
   }
@@ -767,7 +767,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   {
     cout << "Using NVML interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
-    h5_create_dir(out_name, "/Housekeeping/Nvidia");
+    h5_create_dir(out_name, "/Housekeeping/nvidia");
   }
   std::thread nv_log_pwr_thread(nv_log_pwr_func);
   std::thread nv_log_tmp_thread(nv_log_tmp_func);
@@ -778,7 +778,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   {
     cout << "Using Intel Power Gadget interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
-    h5_create_dir(out_name, "/Housekeeping/Intel");
+    h5_create_dir(out_name, "/Housekeeping/intel");
   }
 
   if (is_log_pwr)
@@ -791,7 +791,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
     double CPU_TDP = 0;
     energyLib.GetTDP(0,&CPU_TDP);
-    h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP" , (uint32_t)round(CPU_TDP));
+    h5_write_single<uint32_t>(out_name, "/Housekeeping/intel/TDP" , (uint32_t)round(CPU_TDP));
 
     int numCPUnodes = 0;
     energyLib.GetNumNodes(&numCPUnodes);
@@ -834,7 +834,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
         double data[3];
         int nData;
         energyLib.GetPowerData(0, j, data, &nData);
-        std::string varname = "/Housekeeping/Intel/" +  utf16ToUtf8(szName) + "_Power_Limit";
+        std::string varname = "/Housekeeping/intel/" +  utf16ToUtf8(szName) + "_Power_Limit";
         h5_write_single<double>(out_name, varname.c_str() , data[0]);
       }
 
@@ -850,10 +850,10 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   {
     cout << "Using Intel MSR interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
-    h5_create_dir(out_name, "/Housekeeping/Intel");
+    h5_create_dir(out_name, "/Housekeeping/intel");
 
     rapl = new Rapl();
-    h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP", rapl->get_TDP());
+    h5_write_single<uint32_t>(out_name, "/Housekeeping/intel/TDP", rapl->get_TDP());
   }
 
   std::thread is_log_pwr_thread(is_log_pwr_func);
@@ -911,12 +911,12 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   if (AMD_p_rate > 0)
   {
-    h5_write_buffer<double>(out_name, "/Housekeeping/AMD/Power_Time", AMD_pwr_time.data(), AMD_pwr_time.size(),
+    h5_write_buffer<double>(out_name, "/Housekeeping/amd/Power_Time", AMD_pwr_time.data(), AMD_pwr_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
     for (size_t i = 0; i < AMDP_names.size(); i++)
     {
-      std::string varname = "/Housekeeping/AMD/" + AMDP_names.at(i);
+      std::string varname = "/Housekeeping/amd/" + AMDP_names.at(i);
       h5_write_buffer<cl_float>(out_name, varname.c_str(), AMD_pwr0[i].data(), AMD_pwr0[i].size());
     }
   }
@@ -930,7 +930,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
   if (is_p_rate > 0)
   {
     // size()-1 because differences are computed later
-    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", is_pwr_time.data(), is_pwr_time.size()-1,
+    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Power_Time", is_pwr_time.data(), is_pwr_time.size()-1,
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
     std::vector<double> tmp_vector;
@@ -949,7 +949,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
       {
         tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr0[i].at(j+1)-is_pwr0[i].at(j))) / ((double)is_p_rate*0.001));
       }
-      std::string varname = "/Housekeeping/Intel/" + MSR_names.at(i) + "0";
+      std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "0";
       h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
     }
 
@@ -963,7 +963,7 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
         {
           tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr1[i].at(j+1)-is_pwr1[i].at(j)))/((double)is_p_rate*0.001));
         }
-        std::string varname = "/Housekeeping/Intel/" + MSR_names.at(i) + "1";
+        std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "1";
         h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
       }
     }
@@ -981,22 +981,22 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   if (is_p_rate > 0)
   {
-    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", is_pwr_time.data(), is_pwr_time.size(),
+    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Power_Time", is_pwr_time.data(), is_pwr_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
     for (size_t i = 0; i < MSR_names.size(); i++)
     {
-      std::string varname = "/Housekeeping/Intel/" + MSR_names.at(i) + "0";
+      std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "0";
       h5_write_buffer<cl_float>(out_name, varname.c_str(), is_pwr[i].data(), is_pwr[i].size());
     }
   }
 
   if (is_t_rate > 0)
   {
-    h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Temperature_Time", is_tmp_time.data(), is_tmp_time.size(),
+    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Temperature_Time", is_tmp_time.data(), is_tmp_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
-    h5_write_buffer<cl_int>(out_name, "/Housekeeping/Intel/Package_Temperature", is_tmp.data(), is_tmp.size());
+    h5_write_buffer<cl_int>(out_name, "/Housekeeping/intel/Package_Temperature", is_tmp.data(), is_tmp.size());
   }
 
 #endif
@@ -1009,24 +1009,25 @@ if (cmdOptionExists(argv, argv + argc, "-it")) {
 
   if (nv_p_rate > 0) {
 
-    h5_write_buffer<cl_uint>(out_name, "/Housekeeping/Nvidia/Power", nv_pwr.data(), nv_pwr.size());
+    h5_write_buffer<cl_uint>(out_name, "/Housekeeping/nvidia/Power", nv_pwr.data(), nv_pwr.size());
 
-    h5_write_buffer<double>(out_name, "/Housekeeping/Nvidia/Power_Time", nv_pwr_time.data(), nv_pwr_time.size(),
+    h5_write_buffer<double>(out_name, "/Housekeeping/nvidia/Power_Time", nv_pwr_time.data(), nv_pwr_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
   }
 
   if (nv_t_rate > 0) {
 
-    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/Nvidia/Temperature", nv_tmp.data(), nv_tmp.size());
+    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/nvidia/Temperature", nv_tmp.data(), nv_tmp.size());
 
-    h5_write_buffer<double>(out_name, "/Housekeeping/Nvidia/Temperature_Time", nv_tmp_time.data(), nv_tmp_time.size(),
+    h5_write_buffer<double>(out_name, "/Housekeeping/nvidia/Temperature_Time", nv_tmp_time.data(), nv_tmp_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
   }
 #endif
 
 
   char time_buffer[90];
-  strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%H:%M:%S", localtime(&(start_timeinfo.tv_sec)));
+  time_t tmp_time = start_timeinfo.tv_sec;
+  strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%H:%M:%S", localtime(&tmp_time));
   sprintf(time_buffer, "%s.%03ld", time_buffer, start_timeinfo.tv_usec / 1000);
   h5_write_string(out_name, "Kernel_ExecStart", time_buffer);
   h5_write_string(out_name, "OpenCL_Device", dev_mgr.get_avail_dev_info(deviceIndex).name.c_str());
