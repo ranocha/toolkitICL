@@ -174,14 +174,14 @@ void intel_log_power_func()
       std::this_thread::sleep_for(std::chrono::milliseconds(intel_power_rate/2));
       intel_power_time.push_back(timeval2storage(rawtime));
 
-      rapl->get_socket0_data(pkg,pp0,pp1,dram);
+      rapl->get_socket0_data(pkg, pp0, pp1, dram);
       intel_power0[0].push_back(pkg);
       intel_power0[1].push_back(pp0);
       intel_power0[2].push_back(dram);
       intel_power0[3].push_back(pp1);
 
       if (rapl->detect_socket1() == true) {
-        rapl->get_socket1_data(pkg,pp0,pp1,dram);
+        rapl->get_socket1_data(pkg, pp0, pp1, dram);
         intel_power1[0].push_back(pkg);
         intel_power1[1].push_back(pp0);
         intel_power1[2].push_back(dram);
@@ -802,8 +802,9 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
     }
 
     double CPU_TDP = 0;
-    energyLib.GetTDP(0,&CPU_TDP);
-    h5_write_single<uint32_t>(out_name, "/Housekeeping/intel/TDP" , (uint32_t)round(CPU_TDP));
+    energyLib.GetTDP(0, &CPU_TDP);
+    h5_write_single<float>(out_name, "/Housekeeping/intel/TDP" , (float)(CPU_TDP),
+                           "Thermal Design Power in watt");
 
     int numCPUnodes = 0;
     energyLib.GetNumNodes(&numCPUnodes);
@@ -865,7 +866,8 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
     h5_create_dir(out_name, "/Housekeeping/intel");
 
     rapl = new Rapl();
-    h5_write_single<uint32_t>(out_name, "/Housekeeping/intel/TDP", rapl->get_TDP());
+    h5_write_single<float>(out_name, "/Housekeeping/intel/TDP", rapl->get_TDP(),
+                           "Thermal Design Power in watt");
   }
 
   std::thread intel_log_power_thread(intel_log_power_func);
@@ -945,7 +947,7 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
     h5_write_buffer<double>(out_name, "/Housekeeping/intel/Power_Time", intel_power_time.data(), intel_power_time.size()-1,
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
-    std::vector<double> tmp_vector;
+    std::vector<float> tmp_vector;
 
     size_t max_entries = MSR_names.size();
     if (rapl->detect_igp() == false) {
@@ -962,7 +964,8 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
         tmp_vector.push_back((rapl->get_e_unit()*(double)(intel_power0[i].at(j+1)-intel_power0[i].at(j))) / ((double)intel_power_rate*0.001));
       }
       std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "0";
-      h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
+      h5_write_buffer<float>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size(),
+                             "Power in watt");
     }
 
     if (rapl->detect_socket1() == true)
@@ -976,7 +979,8 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
           tmp_vector.push_back((rapl->get_e_unit()*(double)(intel_power1[i].at(j+1)-intel_power1[i].at(j)))/((double)intel_power_rate*0.001));
         }
         std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "1";
-        h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
+        h5_write_buffer<float>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size(),
+                               "Power in watt");
       }
     }
   }
@@ -999,7 +1003,8 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
     for (size_t i = 0; i < MSR_names.size(); i++)
     {
       std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "0";
-      h5_write_buffer<cl_float>(out_name, varname.c_str(), intel_power[i].data(), intel_power[i].size());
+      h5_write_buffer<float>(out_name, varname.c_str(), intel_power[i].data(), intel_power[i].size(),
+                             "Power in watt");
     }
   }
 
@@ -1008,7 +1013,8 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
     h5_write_buffer<double>(out_name, "/Housekeeping/intel/Temperature_Time", intel_temp_time.data(), intel_temp_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
-    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package_Temperature", intel_temp.data(), intel_temp.size());
+    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package_Temperature", intel_temp.data(), intel_temp.size(),
+                               "Temperature in degree Celsius");
   }
 
 #endif
