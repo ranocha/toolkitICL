@@ -136,46 +136,46 @@ void AMD_log_pwr_func()
 
 #if defined(USEIRAPL)
 #include "rapl.h"
-bool is_log_pwr = false;
-cl_uint is_p_rate = 0;
-std::vector<double> is_pwr_time;
-std::vector<uint64_t> is_pwr0[5]; //Socket 0
-std::vector<uint64_t> is_pwr1[5]; //Socket 1
+bool intel_log_power = false;
+cl_uint intel_power_rate = 0;
+std::vector<double> intel_power_time;
+std::vector<uint64_t> intel_power0[5]; //Socket 0
+std::vector<uint64_t> intel_power1[5]; //Socket 1
 std::vector<std::string> MSR_names {"Package", "Cores", "DRAM", "GT"};
 
 Rapl *rapl;
 
-void is_log_pwr_func()
+void intel_log_power_func()
 {
   timeval rawtime;
 
-  if (is_p_rate > 0)
+  if (intel_power_rate > 0)
   {
     uint64_t pkg;
     uint64_t pp0;
     uint64_t pp1;
     uint64_t dram;
 
-    while (is_log_pwr == true) {
+    while (intel_log_power == true) {
 
       rapl->sample();
-      std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate/2));
+      std::this_thread::sleep_for(std::chrono::milliseconds(intel_power_rate/2));
       gettimeofday(&rawtime, NULL);
-      std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate/2));
-      is_pwr_time.push_back(timeval2storage(rawtime));
+      std::this_thread::sleep_for(std::chrono::milliseconds(intel_power_rate/2));
+      intel_power_time.push_back(timeval2storage(rawtime));
 
       rapl->get_socket0_data(pkg,pp0,pp1,dram);
-      is_pwr0[0].push_back(pkg);
-      is_pwr0[1].push_back(pp0);
-      is_pwr0[2].push_back(dram);
-      is_pwr0[3].push_back(pp1);
+      intel_power0[0].push_back(pkg);
+      intel_power0[1].push_back(pp0);
+      intel_power0[2].push_back(dram);
+      intel_power0[3].push_back(pp1);
 
       if (rapl->detect_socket1() == true) {
         rapl->get_socket1_data(pkg,pp0,pp1,dram);
-        is_pwr1[0].push_back(pkg);
-        is_pwr1[1].push_back(pp0);
-        is_pwr1[2].push_back(dram);
-        is_pwr1[3].push_back(pp1);
+        intel_power1[0].push_back(pkg);
+        intel_power1[1].push_back(pp0);
+        intel_power1[2].push_back(dram);
+        intel_power1[3].push_back(pp1);
       }
 
     }
@@ -197,56 +197,56 @@ std::string utf16ToUtf8(const std::wstring& utf16Str)
 
 CIntelPowerGadgetLib energyLib;
 
-std::vector<double> is_pwr_time;
-std::vector<double> is_tmp_time;
+std::vector<double> intel_power_time;
+std::vector<double> intel_temp_time;
 std::vector<std::string> MSR_names;
 std::vector<int> MSR;
-bool is_log_pwr = false;
-bool is_log_tmp = false;
-cl_uint is_p_rate = 0;
-cl_uint is_t_rate = 0;
+bool intel_log_power = false;
+bool intel_log_temp = false;
+cl_uint intel_power_rate = 0;
+cl_uint intel_temp_rate = 0;
 
-std::vector<float> is_pwr[5];
-std::vector<int> is_tmp;
+std::vector<float> intel_power[5];
+std::vector<cl_ushort> intel_temp;
 
-void is_log_tmp_func()
+void intel_log_temp_func()
 {
-  int Data;
+  int temp;
   timeval rawtime;
 
-  if (is_t_rate > 0)
+  if (intel_temp_rate > 0)
   {
-    is_tmp_time.clear();
+    intel_temp_time.clear();
 
-    while (is_log_tmp == true) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(is_t_rate));
-      energyLib.GetTemperature(0, &Data);
+    while (intel_log_temp == true) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(intel_temp_rate));
+      energyLib.GetTemperature(0, &temp);
       gettimeofday(&rawtime, NULL);
-      is_tmp_time.push_back(timeval2storage(rawtime));
-      is_tmp.push_back(Data);
+      intel_temp_time.push_back(timeval2storage(rawtime));
+      intel_temp.push_back(temp);
     }
   }
 }
 
-void is_log_pwr_func()
+void intel_log_power_func()
 {
   double data[3];
   int nData;
   timeval rawtime;
 
-  if (is_p_rate>0)
+  if (intel_power_rate > 0)
   {
-    is_pwr_time.clear();
+    intel_power_time.clear();
 
-    while (is_log_pwr == true) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(is_p_rate));
+    while (intel_log_power == true) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(intel_power_rate));
       energyLib.ReadSample();
       gettimeofday(&rawtime, NULL);
-      is_pwr_time.push_back(timeval2storage(rawtime));
+      intel_power_time.push_back(timeval2storage(rawtime));
 
       for (unsigned int i = 0; i < MSR.size(); i++) {
         energyLib.GetPowerData(0, MSR.at(i), data, &nData);
-        is_pwr[i].push_back((float)data[0]);
+        intel_power[i].push_back((float)data[0]);
       }
 
     }
@@ -261,26 +261,26 @@ void is_log_pwr_func()
 
 #if defined(USENVML)
 #include <nvml.h>
-bool nv_log_pwr = false;
-bool nv_log_tmp = false;
-cl_uint nv_p_rate=0;
-cl_uint nv_t_rate=0;
+bool nvidia_log_power = false;
+bool nvidia_log_temp = false;
+cl_uint nvidia_power_rate = 0;
+cl_uint nvidia_temp_rate = 0;
 
-std::vector<cl_ushort> nv_tmp;
-std::vector<double> nv_tmp_time;
+std::vector<cl_ushort> nvidia_temp;
+std::vector<double> nvidia_temp_time;
 
-std::vector<cl_uint> nv_pwr;
-std::vector<double> nv_pwr_time;
+std::vector<cl_uint> nvidia_power;
+std::vector<double> nvidia_power_time;
 
-void nv_log_pwr_func()
+void nvidia_log_power_func()
 {
-  if (nv_p_rate>0) {
+  if (nvidia_power_rate > 0) {
     unsigned int temp;
     nvmlReturn_t result;
     timeval rawtime;
 
-    nv_pwr.clear();
-    nv_pwr_time.clear();
+    nvidia_power.clear();
+    nvidia_power_time.clear();
 
     result = nvmlInit();
     if (NVML_SUCCESS == result)
@@ -288,14 +288,13 @@ void nv_log_pwr_func()
       nvmlDevice_t device;
       nvmlDeviceGetHandleByIndex(0, &device);
 
-      while (nv_log_pwr== true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(nv_p_rate));
+      while (nvidia_log_power == true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(nvidia_power_rate));
 
         nvmlDeviceGetPowerUsage(device, &temp);
-        //time(&rawtime);
         gettimeofday(&rawtime, NULL);
-        nv_pwr_time.push_back(timeval2storage(rawtime));
-        nv_pwr.push_back(temp);
+        nvidia_power_time.push_back(timeval2storage(rawtime));
+        nvidia_power.push_back(temp);
       }
 
       nvmlShutdown();
@@ -303,15 +302,15 @@ void nv_log_pwr_func()
   }
 }
 
-void nv_log_tmp_func()
+void nvidia_log_temp_func()
 {
-  if (nv_t_rate>0) {
+  if (nvidia_temp_rate > 0) {
     unsigned int temp;
     nvmlReturn_t result;
     timeval rawtime;
 
-    nv_tmp.clear();
-    nv_tmp_time.clear();
+    nvidia_temp.clear();
+    nvidia_temp_time.clear();
 
     result = nvmlInit();
     if (NVML_SUCCESS == result)
@@ -319,12 +318,12 @@ void nv_log_tmp_func()
       nvmlDevice_t device;
       nvmlDeviceGetHandleByIndex(0, &device);
 
-      while (nv_log_tmp == true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(nv_t_rate));
+      while (nvidia_log_temp == true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(nvidia_temp_rate));
         result = nvmlDeviceGetTemperature(device, NVML_TEMPERATURE_GPU, &temp);
         gettimeofday(&rawtime, NULL);
-        nv_tmp_time.push_back(timeval2storage(rawtime));
-        nv_tmp.push_back(temp);
+        nvidia_temp_time.push_back(timeval2storage(rawtime));
+        nvidia_temp.push_back(temp);
       }
 
       nvmlShutdown();
@@ -494,33 +493,33 @@ int main(int argc, char *argv[]) {
 #if defined(USENVML)
   if (cmdOptionExists(argv, argv + argc, "-nvidia_power")) {
     char const* tmp = getCmdOption(argv, argv + argc, "-nvidia_power");
-    nv_p_rate = atoi(tmp);
-     nv_log_pwr = true;
+    nvidia_power_rate = atoi(tmp);
+    nvidia_log_power = true;
   }
 
   if (cmdOptionExists(argv, argv + argc, "-nvidia_temp")) {
     char const* tmp = getCmdOption(argv, argv + argc, "-nvidia_temp");
-    nv_t_rate = atoi(tmp);
-     nv_log_tmp = true;
+    nvidia_temp_rate = atoi(tmp);
+    nvidia_log_temp = true;
   }
 #endif
 #if defined(USEIPG)
   if (cmdOptionExists(argv, argv + argc, "-intel_power")) {
     char const* tmp = getCmdOption(argv, argv + argc, "-intel_power");
-    is_p_rate = atoi(tmp);
-    is_log_pwr = true;
+    intel_power_rate = atoi(tmp);
+    intel_log_power = true;
   }
 if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
    char const* tmp = getCmdOption(argv, argv + argc, "-intel_temp");
-   is_t_rate = atoi(tmp);
-   is_log_tmp = true;
+   intel_temp_rate = atoi(tmp);
+   intel_log_temp = true;
   }
 #endif
 #if defined(USEIRAPL)
   if (cmdOptionExists(argv, argv + argc, "-intel_power")) {
     char const* tmp = getCmdOption(argv, argv + argc, "-intel_power");
-    is_p_rate = atoi(tmp);
-    is_log_pwr = true;
+    intel_power_rate = atoi(tmp);
+    intel_log_power = true;
   }
 #endif
 #if defined(USEAMDP)
@@ -763,25 +762,25 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
 #endif
 
 #if defined(USENVML)
-  if (nv_log_pwr || nv_log_tmp)
+  if (nvidia_log_power || nvidia_log_temp)
   {
     cout << "Using NVML interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
     h5_create_dir(out_name, "/Housekeeping/nvidia");
   }
-  std::thread nv_log_pwr_thread(nv_log_pwr_func);
-  std::thread nv_log_tmp_thread(nv_log_tmp_func);
+  std::thread nvidia_log_power_thread(nvidia_log_power_func);
+  std::thread nvidia_log_temp_thread(nvidia_log_temp_func);
 #endif
 
 #if defined(USEIPG)
-  if (is_log_pwr || is_log_tmp)
+  if (intel_log_power || intel_log_temp)
   {
     cout << "Using Intel Power Gadget interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
     h5_create_dir(out_name, "/Housekeeping/intel");
   }
 
-  if (is_log_pwr)
+  if (intel_log_power)
   {
     if (energyLib.IntelEnergyLibInitialize() == false)
     {
@@ -840,13 +839,13 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
 
     }
   }
-  std::thread is_log_pwr_thread(is_log_pwr_func);
-  std::thread is_log_tmp_thread(is_log_tmp_func);
+  std::thread intel_log_power_thread(intel_log_power_func);
+  std::thread intel_log_temp_thread(intel_log_temp_func);
 
 #endif
 
 #if defined(USEIRAPL)
-  if (is_log_pwr)
+  if (intel_log_power)
   {
     cout << "Using Intel MSR interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
@@ -856,7 +855,7 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
     h5_write_single<uint32_t>(out_name, "/Housekeeping/intel/TDP", rapl->get_TDP());
   }
 
-  std::thread is_log_pwr_thread(is_log_pwr_func);
+  std::thread intel_log_power_thread(intel_log_power_func);
 
 #endif
 
@@ -924,13 +923,13 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
 
 #if defined(USEIRAPL)
 
-  is_log_pwr = false;
-  is_log_pwr_thread.join();
+  intel_log_power = false;
+  intel_log_power_thread.join();
 
-  if (is_p_rate > 0)
+  if (intel_power_rate > 0)
   {
     // size()-1 because differences are computed later
-    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Power_Time", is_pwr_time.data(), is_pwr_time.size()-1,
+    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Power_Time", intel_power_time.data(), intel_power_time.size()-1,
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
     std::vector<double> tmp_vector;
@@ -945,9 +944,9 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
     {
       tmp_vector.clear();
 
-      for (size_t j = 0; j < is_pwr0[i].size()-1; j++)
+      for (size_t j = 0; j < intel_power0[i].size()-1; j++)
       {
-        tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr0[i].at(j+1)-is_pwr0[i].at(j))) / ((double)is_p_rate*0.001));
+        tmp_vector.push_back((rapl->get_e_unit()*(double)(intel_power0[i].at(j+1)-intel_power0[i].at(j))) / ((double)intel_power_rate*0.001));
       }
       std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "0";
       h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
@@ -959,9 +958,9 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
       {
         tmp_vector.clear();
 
-        for (size_t j = 0; j < is_pwr1[i].size()-1; j++)
+        for (size_t j = 0; j < intel_power1[i].size()-1; j++)
         {
-          tmp_vector.push_back((rapl->get_e_unit()*(double)(is_pwr1[i].at(j+1)-is_pwr1[i].at(j)))/((double)is_p_rate*0.001));
+          tmp_vector.push_back((rapl->get_e_unit()*(double)(intel_power1[i].at(j+1)-intel_power1[i].at(j)))/((double)intel_power_rate*0.001));
         }
         std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "1";
         h5_write_buffer<cl_double>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size());
@@ -973,53 +972,54 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
 
 #if defined(USEIPG)
 
-  is_log_pwr = false;
-  is_log_pwr_thread.join();
+  intel_log_power = false;
+  intel_log_power_thread.join();
 
-  is_log_tmp = false;
-  is_log_tmp_thread.join();
+  intel_log_temp = false;
+  intel_log_temp_thread.join();
 
-  if (is_p_rate > 0)
+  if (intel_power_rate > 0)
   {
-    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Power_Time", is_pwr_time.data(), is_pwr_time.size(),
+    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Power_Time", intel_power_time.data(), intel_power_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
     for (size_t i = 0; i < MSR_names.size(); i++)
     {
       std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "0";
-      h5_write_buffer<cl_float>(out_name, varname.c_str(), is_pwr[i].data(), is_pwr[i].size());
+      h5_write_buffer<cl_float>(out_name, varname.c_str(), intel_power[i].data(), intel_power[i].size());
     }
   }
 
-  if (is_t_rate > 0)
+  if (intel_temp_rate > 0)
   {
-    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Temperature_Time", is_tmp_time.data(), is_tmp_time.size(),
+    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Temperature_Time", intel_temp_time.data(), intel_temp_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
-    h5_write_buffer<cl_int>(out_name, "/Housekeeping/intel/Package_Temperature", is_tmp.data(), is_tmp.size());
+    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package_Temperature", intel_temp.data(), intel_temp.size());
   }
 
 #endif
 
 #if defined(USENVML)
-  nv_log_pwr = false;
-  nv_log_tmp = false;
-  nv_log_pwr_thread.join();
-  nv_log_tmp_thread.join();
+  nvidia_log_power = false;
+  nvidia_log_temp = false;
+  nvidia_log_power_thread.join();
+  nvidia_log_temp_thread.join();
 
-  if (nv_p_rate > 0) {
+  if (nvidia_power_rate > 0) {
 
-    h5_write_buffer<cl_uint>(out_name, "/Housekeeping/nvidia/Power", nv_pwr.data(), nv_pwr.size());
+    h5_write_buffer<cl_uint>(out_name, "/Housekeeping/nvidia/Power", nvidia_power.data(), nvidia_power.size());
 
-    h5_write_buffer<double>(out_name, "/Housekeeping/nvidia/Power_Time", nv_pwr_time.data(), nv_pwr_time.size(),
+    h5_write_buffer<double>(out_name, "/Housekeeping/nvidia/Power_Time", nvidia_power_time.data(), nvidia_power_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
   }
 
-  if (nv_t_rate > 0) {
+  if (nvidia_temp_rate > 0) {
 
-    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/nvidia/Temperature", nv_tmp.data(), nv_tmp.size());
+    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/nvidia/Temperature", nvidia_temp.data(), nvidia_temp.size(),
+                               "Temperature in degree Celsius");
 
-    h5_write_buffer<double>(out_name, "/Housekeeping/nvidia/Temperature_Time", nv_tmp_time.data(), nv_tmp_time.size(),
+    h5_write_buffer<double>(out_name, "/Housekeeping/nvidia/Temperature_Time", nvidia_temp_time.data(), nvidia_temp_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
   }
 #endif
