@@ -118,6 +118,11 @@ build_script:
   - sh: h5dump -d Housekeeping/intel/Package0 out_repetition_test.h5
   - sh: h5dump -d Housekeeping/intel/Power_Time out_repetition_test.h5
   - sh: h5dump -d Housekeeping/intel/TDP out_repetition_test.h5
+  - sh: sudo ../bin/toolkitICL -b -intel_temp 1000 -c repetition_test.h5
+  - sh: h5ls out_repetition_test.h5/Housekeeping
+  - sh: h5ls out_repetition_test.h5/Housekeeping/intel
+  - sh: h5dump -d Housekeeping/intel/Package_Temperature out_repetition_test.h5
+  - sh: h5dump -d Housekeeping/intel/Temperature_Time out_repetition_test.h5
   - sh: cd ..
     # display test log
   - sh: cat Testing/Temporary/LastTest.log
