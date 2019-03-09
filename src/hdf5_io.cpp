@@ -95,123 +95,125 @@ bool h5_check_object(char const* filename, char const* varname)
 {
 	hid_t h5_file_id;
 
-  if (fileExists(filename)) {
-    h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if (fileExists(filename)) {
+		h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 
-    if (H5LTpath_valid(h5_file_id, varname, true) > 0) {
-      H5Fclose(h5_file_id);
-      return true;
-    }
-    else {
-      H5Fclose(h5_file_id);
-      return false;
-    }
-  }
+		if (H5LTpath_valid(h5_file_id, varname, true) > 0) {
+			H5Fclose(h5_file_id);
+			return true;
+		}
+		else {
+			H5Fclose(h5_file_id);
+			return false;
+		}
+	}
 
-  std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
-  return false;
+	std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
+	return false;
 }
 
 
 bool h5_get_content(char const* filename, char const* hdf_dir,
-                    std::vector<std::string>& data_names, std::vector<HD5_Type>& data_types, std::vector<size_t>& data_sizes)
+	std::vector<std::string>& data_names, std::vector<HD5_Type>& data_types, std::vector<size_t>& data_sizes)
 {
-  if (!fileExists(filename)) {
-    std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
-    return false;
-  }
+	if (!fileExists(filename)) {
+		std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
+		return false;
+	}
 
-  hid_t h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-  hid_t grp = H5Gopen(h5_file_id, hdf_dir, H5P_DEFAULT);
+	hid_t h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	hid_t grp = H5Gopen(h5_file_id, hdf_dir, H5P_DEFAULT);
 
-  hsize_t nobj;
-  H5Gget_num_objs(grp, &nobj);
+	hsize_t nobj;
+	H5Gget_num_objs(grp, &nobj);
 
-  for (hsize_t obj_idx = 0; obj_idx < nobj; obj_idx++) {
+	for (hsize_t obj_idx = 0; obj_idx < nobj; obj_idx++) {
 
-    int object_type = H5Gget_objtype_by_idx(grp, obj_idx);
-    if (object_type != H5G_DATASET) {
-      continue;
-    }
+		int object_type = H5Gget_objtype_by_idx(grp, obj_idx);
+		if (object_type != H5G_DATASET) {
+			continue;
+		}
 
-    ssize_t len = H5Gget_objname_by_idx(grp, obj_idx, NULL, 0);
-    vector<char> object_name(len+1, '\0');
-    H5Gget_objname_by_idx(grp, obj_idx, &(object_name[0]), len+1);
+		ssize_t len = H5Gget_objname_by_idx(grp, obj_idx, NULL, 0);
+		vector<char> object_name(len + 1, '\0');
+		H5Gget_objname_by_idx(grp, obj_idx, &(object_name[0]), len + 1);
 
-    data_names.push_back(string(hdf_dir) + string(object_name.begin(), object_name.end()));
+		data_names.push_back(string(hdf_dir) + string(object_name.begin(), object_name.end()));
 
-    hid_t dataset = H5Dopen(grp, &(object_name[0]), H5P_DEFAULT);
-    hid_t dataspace = H5Dget_space(dataset);
-    int ndims = H5Sget_simple_extent_ndims(dataspace);
-    vector<hsize_t> dims(ndims);
-    H5Sget_simple_extent_dims(dataspace, &(dims[0]), NULL);
-    H5Sclose(dataspace);
+		hid_t dataset = H5Dopen(grp, &(object_name[0]), H5P_DEFAULT);
+		hid_t dataspace = H5Dget_space(dataset);
+		int ndims = H5Sget_simple_extent_ndims(dataspace);
+		vector<hsize_t> dims(ndims);
+		H5Sget_simple_extent_dims(dataspace, &(dims[0]), NULL);
+		H5Sclose(dataspace);
 
-    data_sizes.push_back(accumulate(begin(dims), end(dims), 1, std::multiplies<hsize_t>()));
+		data_sizes.push_back(accumulate(begin(dims), end(dims), 1, std::multiplies<hsize_t>()));
 
-    hid_t datatype = H5Dget_type(dataset);
-    if (H5Tequal(datatype, type_to_h5_type<float>()) > 0) {
-      data_types.push_back(H5_float);
-    }
-    else if (H5Tequal(datatype, type_to_h5_type<double>()) > 0) {
-      data_types.push_back(H5_double);
-    }
-    else if (H5Tequal(datatype, type_to_h5_type<cl_char>()) > 0) {
-      data_types.push_back(H5_char);
-    }
-    else if (H5Tequal(datatype, type_to_h5_type<cl_uchar>()) > 0) {
-      data_types.push_back(H5_uchar);
-    }
-    else if (H5Tequal(datatype, type_to_h5_type<cl_short>()) > 0) {
-      data_types.push_back(H5_short);
-    }
-    else if (H5Tequal(datatype, type_to_h5_type<cl_ushort>()) > 0) {
-      data_types.push_back(H5_ushort);
-    }
-    else if (H5Tequal(datatype, type_to_h5_type<cl_int>()) > 0) {
-      data_types.push_back(H5_int);
-    }
-    else if (H5Tequal(datatype, type_to_h5_type<cl_uint>()) > 0) {
-      data_types.push_back(H5_uint);
-    }
-    else if (H5Tequal(datatype, type_to_h5_type<cl_long>()) > 0) {
-      data_types.push_back(H5_long);
-    }
-    else if (H5Tequal(datatype, type_to_h5_type<cl_ulong>()) > 0) {
-      data_types.push_back(H5_ulong);
-    }
-    else {
-      std::cerr << ERROR_INFO << "Data type '" << datatype << "' unknown." << std::endl;
-      //TODO: Exception?
-    }
+		hid_t datatype = H5Dget_type(dataset);
+		if (H5Tequal(datatype, type_to_h5_type<float>()) > 0) {
+			data_types.push_back(H5_float);
+		}
+		else if (H5Tequal(datatype, type_to_h5_type<double>()) > 0) {
+			data_types.push_back(H5_double);
+		}
+		else if (H5Tequal(datatype, type_to_h5_type<cl_char>()) > 0) {
+			data_types.push_back(H5_char);
+		}
+		else if (H5Tequal(datatype, type_to_h5_type<cl_uchar>()) > 0) {
+			data_types.push_back(H5_uchar);
+		}
+		else if (H5Tequal(datatype, type_to_h5_type<cl_short>()) > 0) {
+			data_types.push_back(H5_short);
+		}
+		else if (H5Tequal(datatype, type_to_h5_type<cl_ushort>()) > 0) {
+			data_types.push_back(H5_ushort);
+		}
+		else if (H5Tequal(datatype, type_to_h5_type<cl_int>()) > 0) {
+			data_types.push_back(H5_int);
+		}
+		else if (H5Tequal(datatype, type_to_h5_type<cl_uint>()) > 0) {
+			data_types.push_back(H5_uint);
+		}
+		else if (H5Tequal(datatype, type_to_h5_type<cl_long>()) > 0) {
+			data_types.push_back(H5_long);
+		}
+		else if (H5Tequal(datatype, type_to_h5_type<cl_ulong>()) > 0) {
+			data_types.push_back(H5_ulong);
+		}
+		else {
+			std::cerr << ERROR_INFO << "Data type '" << datatype << "' unknown." << std::endl;
+			//TODO: Exception?
+		}
 
-    H5Tclose(datatype);
-    H5Dclose(dataset);
-  }
+		H5Tclose(datatype);
+		H5Dclose(dataset);
+	}
 
-  H5Gclose(grp);
-  H5Fclose(h5_file_id);
+	H5Gclose(grp);
+	H5Fclose(h5_file_id);
 
-  return true;
+	return true;
 }
 
 
 bool h5_create_dir(char const* filename, char const* hdf_dir)
 {
-  hid_t h5_file_id, grp;
+	hid_t h5_file_id, grp;
 
-  if (fileExists(filename)) {
-    h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
-  }
-  else {
-    return false;
-  }
+	if (fileExists(filename)) {
+		h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	}
+	else {
+		return false;
+	}
 
-  grp = H5Gcreate1(h5_file_id, hdf_dir, 0);
-  H5Gclose(grp);
-  H5Fclose(h5_file_id);
+	if (H5LTpath_valid(h5_file_id, hdf_dir, true) <= 0) {
+		grp = H5Gcreate1(h5_file_id, hdf_dir, 0);
+		H5Gclose(grp);
+	}
+	H5Fclose(h5_file_id);
 
-  return true;
+	return true;
 }
 
 
@@ -219,30 +221,30 @@ bool h5_create_dir(char const* filename, char const* hdf_dir)
 template<typename TYPE>
 bool h5_read_buffer(char const* filename, char const* varname, TYPE* data)
 {
-  if (!fileExists(filename)) {
-    std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
-    //TODO: Exception? Only error code?
-    return false;
-  }
+	if (!fileExists(filename)) {
+		std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
+		//TODO: Exception? Only error code?
+		return false;
+	}
 
-  hid_t h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-  if (H5LTpath_valid(h5_file_id, varname, true) <= 0) {
-    std::cerr << ERROR_INFO << "Variable '" << varname << "' not found in file '" << filename << "'." << std::endl;
-    //TODO: Exception? Only error code?
-    H5Fclose(h5_file_id);
-    return false;
-  }
+	hid_t h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	if (H5LTpath_valid(h5_file_id, varname, true) <= 0) {
+		std::cerr << ERROR_INFO << "Variable '" << varname << "' not found in file '" << filename << "'." << std::endl;
+		//TODO: Exception? Only error code?
+		H5Fclose(h5_file_id);
+		return false;
+	}
 
-  herr_t err = H5LTread_dataset(h5_file_id, varname, type_to_h5_type<TYPE>(), data);
-  if (err < 0) {
-    std::cerr << ERROR_INFO << "Reading variable '" << varname << "' in file '" << filename << "' not possible." << std::endl;
-    //TODO: Exception? Only error code?
-    H5Fclose(h5_file_id);
-    return false;
-  }
+	herr_t err = H5LTread_dataset(h5_file_id, varname, type_to_h5_type<TYPE>(), data);
+	if (err < 0) {
+		std::cerr << ERROR_INFO << "Reading variable '" << varname << "' in file '" << filename << "' not possible." << std::endl;
+		//TODO: Exception? Only error code?
+		H5Fclose(h5_file_id);
+		return false;
+	}
 
-  H5Fclose(h5_file_id);
-  return true;
+	H5Fclose(h5_file_id);
+	return true;
 }
 
 // template instantiations
@@ -260,59 +262,69 @@ template bool h5_read_buffer(char const* filename, char const* varname, cl_ulong
 
 // write a buffer to an HDF5 file using compression
 template<typename TYPE>
-bool h5_write_buffer(char const* filename, char const* varname, TYPE const* data, size_t size)
+bool h5_write_buffer(char const* filename, char const* varname, TYPE const* data, size_t size, std::string const& description)
 {
-  hid_t   h5_file_id, dataset_id, dataspace_id, memspace_id;
-  hsize_t hdf_dims[2];
-  hid_t   plist_id;
-  hsize_t cdims[2]; //chunk size used for compression
+	hid_t   h5_file_id, dataset_id, dataspace_id;
+	hsize_t hdf_dims[2];
+	hid_t   plist_id;
+	hsize_t chunk_dims[2]; //chunk size used for compression
+	int ndims;
 
-  if (!fileExists(filename)) {
-    h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-  }
-  else {
-    h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
-  }
+	if (!fileExists(filename)) {
+		h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	}
+	else {
+		h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	}
 
-  hdf_dims[0] = size;
-  hdf_dims[1] = get_vector_size<TYPE>();
+	hdf_dims[0] = size;
+	hdf_dims[1] = get_vector_size<TYPE>();
 
-  cdims[0] = (hsize_t)(hdf_dims[0]/chunk_factor) + 1;
-  cdims[1] = hdf_dims[1];
+	if (hdf_dims[1] == 1) {
+		ndims = 1;
+	}
+	else {
+		ndims = 2;
+	}
 
-  plist_id = H5Pcreate(H5P_DATASET_CREATE);
-  H5Pset_chunk(plist_id, 2, cdims);
-  H5Pset_deflate(plist_id, 9);
+	chunk_dims[0] = (hsize_t)(hdf_dims[0] / chunk_factor) + 1;
+	chunk_dims[1] = hdf_dims[1];
 
-  dataspace_id = H5Screate_simple(2, hdf_dims, NULL);
-  memspace_id = H5Screate_simple(2, hdf_dims, NULL);
-  dataset_id = H5Dcreate2(h5_file_id, varname , type_to_h5_type<TYPE>(), dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
+	plist_id = H5Pcreate(H5P_DATASET_CREATE);
+	H5Pset_chunk(plist_id, ndims, chunk_dims);
+	H5Pset_deflate(plist_id, 9);
 
-  H5Dwrite(dataset_id, type_to_h5_type<TYPE>(), memspace_id, dataspace_id, H5P_DEFAULT, data);
-  // The same can be done using H5 High Level API, but without compression
-  // H5LTmake_dataset(h5_file_id, varname, 2, hdf_dims, type_to_h5_type<TYPE>(), data);
+	dataspace_id = H5Screate_simple(ndims, hdf_dims, NULL);
+	dataset_id = H5Dcreate2(h5_file_id, varname, type_to_h5_type<TYPE>(), dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 
-  H5Pclose(plist_id);
-  H5Sclose(dataspace_id);
-  H5Sclose(memspace_id);
-  H5Dclose(dataset_id);
+	H5Dwrite(dataset_id, type_to_h5_type<TYPE>(), dataspace_id, dataspace_id, H5P_DEFAULT, data);
+	// The same can be done using H5 High Level API, but without compression
+	// H5LTmake_dataset(h5_file_id, varname, ndims, hdf_dims, type_to_h5_type<TYPE>(), data);
 
-  H5Fclose(h5_file_id);
+	if (!description.empty()) {
+		H5LTset_attribute_string(h5_file_id, varname, "description", description.c_str());
+	}
 
-  return true;
+	H5Pclose(plist_id);
+	H5Dclose(dataset_id);
+	H5Sclose(dataspace_id);
+
+	H5Fclose(h5_file_id);
+
+	return true;
 }
 
 // template instantiations
-template bool h5_write_buffer(char const* filename, char const* varname, float const* data, size_t size);
-template bool h5_write_buffer(char const* filename, char const* varname, double const* data, size_t size);
-template bool h5_write_buffer(char const* filename, char const* varname, cl_char const* data, size_t size);
-template bool h5_write_buffer(char const* filename, char const* varname, cl_uchar const* data, size_t size);
-template bool h5_write_buffer(char const* filename, char const* varname, cl_short const* data, size_t size);
-template bool h5_write_buffer(char const* filename, char const* varname, cl_ushort const* data, size_t size);
-template bool h5_write_buffer(char const* filename, char const* varname, cl_int const* data, size_t size);
-template bool h5_write_buffer(char const* filename, char const* varname, cl_uint const* data, size_t size);
-template bool h5_write_buffer(char const* filename, char const* varname, cl_long const* data, size_t size);
-template bool h5_write_buffer(char const* filename, char const* varname, cl_ulong const* data, size_t size);
+template bool h5_write_buffer(char const* filename, char const* varname, float const* data, size_t size, std::string const& description);
+template bool h5_write_buffer(char const* filename, char const* varname, double const* data, size_t size, std::string const& description);
+template bool h5_write_buffer(char const* filename, char const* varname, cl_char const* data, size_t size, std::string const& description);
+template bool h5_write_buffer(char const* filename, char const* varname, cl_uchar const* data, size_t size, std::string const& description);
+template bool h5_write_buffer(char const* filename, char const* varname, cl_short const* data, size_t size, std::string const& description);
+template bool h5_write_buffer(char const* filename, char const* varname, cl_ushort const* data, size_t size, std::string const& description);
+template bool h5_write_buffer(char const* filename, char const* varname, cl_int const* data, size_t size, std::string const& description);
+template bool h5_write_buffer(char const* filename, char const* varname, cl_uint const* data, size_t size, std::string const& description);
+template bool h5_write_buffer(char const* filename, char const* varname, cl_long const* data, size_t size, std::string const& description);
+template bool h5_write_buffer(char const* filename, char const* varname, cl_ulong const* data, size_t size, std::string const& description);
 
 
 
@@ -325,194 +337,205 @@ template bool h5_write_buffer(char const* filename, char const* varname, cl_ulon
 
 // write a single item to an HDF5 file
 template<typename TYPE>
-bool h5_write_single(char const* filename, char const* varname, TYPE data)
+bool h5_write_single(char const* filename, char const* varname, TYPE data, std::string const& description)
 {
-  hid_t h5_file_id;
+	hid_t h5_file_id;
 
-  if (!fileExists(filename)) {
-    h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-  }
-  else {
-    h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
-  }
+	if (!fileExists(filename)) {
+		h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	}
+	else {
+		h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	}
 
-  H5LTmake_dataset(h5_file_id, varname, 0, NULL, type_to_h5_type<TYPE>(), &data);
+	H5LTmake_dataset(h5_file_id, varname, 0, NULL, type_to_h5_type<TYPE>(), &data);
 
-  H5Fclose(h5_file_id);
+	if (!description.empty()) {
+		H5LTset_attribute_string(h5_file_id, varname, "description", description.c_str());
+	}
 
-  return true;
+	H5Fclose(h5_file_id);
+
+	return true;
 }
 
 // template instantiations
-template bool h5_write_single(char const* filename, char const* varname, float data);
-template bool h5_write_single(char const* filename, char const* varname, double data);
-template bool h5_write_single(char const* filename, char const* varname, cl_char data);
-template bool h5_write_single(char const* filename, char const* varname, cl_uchar data);
-template bool h5_write_single(char const* filename, char const* varname, cl_short data);
-template bool h5_write_single(char const* filename, char const* varname, cl_ushort data);
-template bool h5_write_single(char const* filename, char const* varname, cl_int data);
-template bool h5_write_single(char const* filename, char const* varname, cl_uint data);
-template bool h5_write_single(char const* filename, char const* varname, cl_long data);
-template bool h5_write_single(char const* filename, char const* varname, cl_ulong data);
+template bool h5_write_single(char const* filename, char const* varname, float data, std::string const& description);
+template bool h5_write_single(char const* filename, char const* varname, double data, std::string const& description);
+template bool h5_write_single(char const* filename, char const* varname, cl_char data, std::string const& description);
+template bool h5_write_single(char const* filename, char const* varname, cl_uchar data, std::string const& description);
+template bool h5_write_single(char const* filename, char const* varname, cl_short data, std::string const& description);
+template bool h5_write_single(char const* filename, char const* varname, cl_ushort data, std::string const& description);
+template bool h5_write_single(char const* filename, char const* varname, cl_int data, std::string const& description);
+template bool h5_write_single(char const* filename, char const* varname, cl_uint data, std::string const& description);
+template bool h5_write_single(char const* filename, char const* varname, cl_long data, std::string const& description);
+template bool h5_write_single(char const* filename, char const* varname, cl_ulong data, std::string const& description);
 
 
 // reading and writing single strings
 bool h5_read_string(char const* filename, char const* varname, std::string& output)
 {
-  if (!fileExists(filename)) {
-    std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
-    //TODO: File not found - no idea what error code to use
-    return false;
-  }
+	if (!fileExists(filename)) {
+		std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
+		//TODO: File not found - no idea what error code to use
+		return false;
+	}
 
-  hid_t h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-  hid_t dataset = H5Dopen(h5_file_id, varname, H5P_DEFAULT);
+	hid_t h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	hid_t dataset = H5Dopen(h5_file_id, varname, H5P_DEFAULT);
 
-  hid_t datatype = H5Dget_type(dataset);
-  bool variable_length = H5Tis_variable_str(datatype);
+	hid_t datatype = H5Dget_type(dataset);
+	bool variable_length = H5Tis_variable_str(datatype);
 
-  hid_t dataspace = H5Dget_space(dataset);
+	hid_t dataspace = H5Dget_space(dataset);
 
-  if (variable_length) {
-    int ndims = H5Sget_simple_extent_ndims(dataspace);
-    vector<hsize_t> dims(ndims);
-    H5Sget_simple_extent_dims(dataspace, &(dims[0]), NULL);
-    hsize_t size = accumulate(begin(dims), end(dims), 1, std::multiplies<hsize_t>());
+	if (variable_length) {
+		int ndims = H5Sget_simple_extent_ndims(dataspace);
+		vector<hsize_t> dims(ndims);
+		H5Sget_simple_extent_dims(dataspace, &(dims[0]), NULL);
+		hsize_t size = accumulate(begin(dims), end(dims), 1, std::multiplies<hsize_t>());
 
-    std::vector<char*> buffer(size * sizeof(char*));
-    H5Dread(dataset, datatype, dataspace, dataspace, H5P_DEFAULT, &(buffer[0]));
-    output = std::string(buffer.at(0));
+		std::vector<char*> buffer(size * sizeof(char*));
+		H5Dread(dataset, datatype, dataspace, dataspace, H5P_DEFAULT, &(buffer[0]));
+		output = std::string(buffer.at(0));
 
-    H5Dvlen_reclaim(datatype, dataspace, H5P_DEFAULT, &(buffer[0]));
-  }
-  else {
-    size_t datatype_size = H5Tget_size(datatype);
-    hssize_t npoints = H5Sget_simple_extent_npoints(dataspace);
+		H5Dvlen_reclaim(datatype, dataspace, H5P_DEFAULT, &(buffer[0]));
+	}
+	else {
+		size_t datatype_size = H5Tget_size(datatype);
+		hssize_t npoints = H5Sget_simple_extent_npoints(dataspace);
 
-    std::vector<char> buffer(datatype_size * npoints, '\0');
-    H5Dread(dataset, datatype, dataspace, dataspace, H5P_DEFAULT, &(buffer[0]));
-    output = std::string(begin(buffer), end(buffer));
-  }
+		std::vector<char> buffer(datatype_size * npoints, '\0');
+		H5Dread(dataset, datatype, dataspace, dataspace, H5P_DEFAULT, &(buffer[0]));
+		output = std::string(begin(buffer), end(buffer));
+	}
 
-  H5Sclose(dataspace);
-  H5Tclose(datatype);
-  H5Dclose(dataset);
-  H5Fclose(h5_file_id);
+	H5Sclose(dataspace);
+	H5Tclose(datatype);
+	H5Dclose(dataset);
+	H5Fclose(h5_file_id);
 
-  return true;
+	return true;
 }
 
 bool h5_write_string(char const* filename, char const* varname, std::string const& buffer)
 {
-  hid_t h5_file_id;
+	hid_t h5_file_id;
 
-  if (!fileExists(filename)) {
-    h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-  }
-  else {
-    h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
-  }
+	if (!fileExists(filename)) {
+		h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	}
+	else {
+		h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	}
 
-  H5LTmake_dataset_string(h5_file_id, varname, buffer.c_str());
+	H5LTmake_dataset_string(h5_file_id, varname, buffer.c_str());
 
-  H5Fclose(h5_file_id);
+	H5Fclose(h5_file_id);
 
-  return true;
+	return true;
 }
 
 
 // reading and writing arrays of strings
 bool h5_read_strings(char const* filename, char const* varname, std::vector<std::string>& lines)
 {
-  if (!fileExists(filename)) {
-    std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
-    //TODO: File not found - Exception? Error code?
-    return false;
-  }
+	if (!fileExists(filename)) {
+		std::cerr << ERROR_INFO << "File '" << filename << "' not found." << std::endl;
+		//TODO: File not found - Exception? Error code?
+		return false;
+	}
 
-  hid_t h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-  hid_t dataset = H5Dopen(h5_file_id, varname, H5P_DEFAULT);
+	hid_t h5_file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	hid_t dataset = H5Dopen(h5_file_id, varname, H5P_DEFAULT);
 
-  hid_t datatype = H5Dget_type(dataset);
-  bool variable_length = H5Tis_variable_str(datatype);
+	hid_t datatype = H5Dget_type(dataset);
+	bool variable_length = H5Tis_variable_str(datatype);
 
-  hid_t dataspace = H5Dget_space(dataset);
+	hid_t dataspace = H5Dget_space(dataset);
 
-  if (variable_length) {
-    int ndims = H5Sget_simple_extent_ndims(dataspace);
-    vector<hsize_t> dims(ndims);
-    H5Sget_simple_extent_dims(dataspace, &(dims[0]), NULL);
-    hsize_t size = accumulate(begin(dims), end(dims), 1, std::multiplies<hsize_t>());
+	if (variable_length) {
+		int ndims = H5Sget_simple_extent_ndims(dataspace);
+		vector<hsize_t> dims(ndims);
+		H5Sget_simple_extent_dims(dataspace, &(dims[0]), NULL);
+		hsize_t size = accumulate(begin(dims), end(dims), 1, std::multiplies<hsize_t>());
 
-    std::vector<char*> buffer(size * sizeof(char*));
-    H5Dread(dataset, datatype, dataspace, dataspace, H5P_DEFAULT, &(buffer[0]));
+		std::vector<char*> buffer(size * sizeof(char*));
+		H5Dread(dataset, datatype, dataspace, dataspace, H5P_DEFAULT, &(buffer[0]));
 
-    for (char const* line : buffer) {
-      if (line == nullptr) {
-        continue;
-      }
-      lines.push_back(string(line));
-    }
+		for (char const* line : buffer) {
+			if (line == nullptr) {
+				continue;
+			}
+			lines.push_back(string(line));
+		}
 
-    H5Dvlen_reclaim(datatype, dataspace, H5P_DEFAULT, &(buffer[0]));
-  }
-  else {
-    size_t line_length = H5Tget_size(datatype);
-    hssize_t num_lines = H5Sget_simple_extent_npoints(dataspace);
+		H5Dvlen_reclaim(datatype, dataspace, H5P_DEFAULT, &(buffer[0]));
+	}
+	else {
+		size_t line_length = H5Tget_size(datatype);
+		hssize_t num_lines = H5Sget_simple_extent_npoints(dataspace);
 
-    std::vector<char> buffer(line_length * num_lines, '\0');
-    H5LTread_dataset_string(h5_file_id, varname, &(buffer[0]));
+		std::vector<char> buffer(line_length * num_lines, '\0');
+		H5LTread_dataset_string(h5_file_id, varname, &(buffer[0]));
 
-    size_t str_start = 0;
-    for (hssize_t lines_found = 0; lines_found < num_lines; ++lines_found) {
-      lines.push_back(&(buffer[str_start]));
-      str_start += line_length;
-    }
-  }
+		size_t str_start = 0;
+		for (hssize_t lines_found = 0; lines_found < num_lines; ++lines_found) {
+			lines.push_back(&(buffer[str_start]));
+			str_start += line_length;
+		}
+	}
 
-  H5Sclose(dataspace);
-  H5Tclose(datatype);
-  H5Dclose(dataset);
-  H5Fclose(h5_file_id);
+	H5Sclose(dataspace);
+	H5Tclose(datatype);
+	H5Dclose(dataset);
+	H5Fclose(h5_file_id);
 
-  return true;
+	return true;
 }
 
 bool h5_write_strings(char const* filename, char const* varname, std::vector<std::string> const& lines)
 {
-  // create single C string using the format of the (deprecated) matlab function
-  // `hdf5write` for cell arrays of char arrays (aka strings)
-  size_t line_length = std::max_element(
-    lines.cbegin(), lines.cend(), [] (std::string s1, std::string s2) { return s1.size() < s2.size(); } )->size() + 1;
+	// create single C string using the format of the (deprecated) matlab function
+	// `hdf5write` for cell arrays of char arrays (aka strings)
+	size_t line_length = std::max_element(
+		lines.cbegin(), lines.cend(), [](std::string s1, std::string s2) { return s1.size() < s2.size(); })->size() + 1;
 
-  std::vector<char> buffer(line_length * lines.size(), '\0');
-  size_t str_start = 0;
-  for (const string& line : lines) {
-    strcpy(&(buffer[str_start]), line.c_str());
-    str_start += line_length;
-  }
+	std::vector<char> buffer(line_length * lines.size(), '\0');
+	size_t str_start = 0;
+	for (const string& line : lines) {
+		strcpy(&(buffer[str_start]), line.c_str());
+		str_start += line_length;
+	}
 
-  // save buffer and additional information
-  hid_t h5_file_id;
-  if (!fileExists(filename)) {
-    h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-  }
-  else {
-    h5_file_id = H5Fopen(filename, H5F_ACC_RDWR , H5P_DEFAULT);
-  }
+	// save buffer and additional information
+	hid_t h5_file_id;
+	if (!fileExists(filename)) {
+		h5_file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	}
+	else {
+		h5_file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	}
 
-  hsize_t hdf_dims[1] = {lines.size()};
-  hid_t dataspace = H5Screate_simple(1, hdf_dims, NULL);
-  hid_t datatype = H5Tcreate(H5T_STRING, line_length);
-  hid_t dataset = H5Dcreate2(h5_file_id, varname, datatype, dataspace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	hsize_t hdf_dims[1] = { lines.size() };
+	hsize_t chunk_dims[1] = { (hsize_t)(hdf_dims[0] / chunk_factor) + 1 };
 
-  H5Dwrite(dataset, datatype, dataspace, dataspace, H5P_DEFAULT, &(buffer[0]));
+	hid_t plist_id = H5Pcreate(H5P_DATASET_CREATE);
+	H5Pset_chunk(plist_id, 1, chunk_dims);
+	H5Pset_deflate(plist_id, 9);
 
-  H5Dclose(dataset);
-  H5Tclose(datatype);
-  H5Sclose(dataspace);
+	hid_t dataspace_id = H5Screate_simple(1, hdf_dims, NULL);
+	hid_t datatype_id = H5Tcreate(H5T_STRING, line_length);
+	hid_t dataset_id = H5Dcreate2(h5_file_id, varname, datatype_id, dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 
-  H5Fclose(h5_file_id);
+	H5Dwrite(dataset_id, datatype_id, dataspace_id, dataspace_id, H5P_DEFAULT, &(buffer[0]));
 
-  return true;
+	H5Pclose(plist_id);
+	H5Dclose(dataset_id);
+	H5Tclose(datatype_id);
+	H5Sclose(dataspace_id);
+
+	H5Fclose(h5_file_id);
+
+	return true;
 }
