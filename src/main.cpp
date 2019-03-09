@@ -156,6 +156,16 @@ void intel_log_power_func()
     uint64_t pp1;
     uint64_t dram;
 
+    intel_power0[0].clear();
+    intel_power0[1].clear();
+    intel_power0[2].clear();
+    intel_power0[3].clear();
+    intel_power1[0].clear();
+    intel_power1[1].clear();
+    intel_power1[2].clear();
+    intel_power1[3].clear();
+    intel_power_time.clear();
+
     while (intel_log_power == true) {
 
       rapl->sample();
@@ -216,6 +226,7 @@ void intel_log_temp_func()
 
   if (intel_temp_rate > 0)
   {
+    intel_temp.clear();
     intel_temp_time.clear();
 
     while (intel_log_temp == true) {
@@ -236,6 +247,7 @@ void intel_log_power_func()
 
   if (intel_power_rate > 0)
   {
+    intel_power.clear();
     intel_power_time.clear();
 
     while (intel_log_power == true) {
@@ -269,7 +281,7 @@ cl_uint nvidia_temp_rate = 0;
 std::vector<cl_ushort> nvidia_temp;
 std::vector<double> nvidia_temp_time;
 
-std::vector<cl_uint> nvidia_power;
+std::vector<float> nvidia_power;
 std::vector<double> nvidia_power_time;
 
 void nvidia_log_power_func()
@@ -294,7 +306,8 @@ void nvidia_log_power_func()
         nvmlDeviceGetPowerUsage(device, &temp);
         gettimeofday(&rawtime, NULL);
         nvidia_power_time.push_back(timeval2storage(rawtime));
-        nvidia_power.push_back(temp);
+        // convert milliwatt to watt
+        nvidia_power.push_back(1.e-3f * (float)(temp));
       }
 
       nvmlShutdown();
@@ -1008,7 +1021,8 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
 
   if (nvidia_power_rate > 0) {
 
-    h5_write_buffer<cl_uint>(out_name, "/Housekeeping/nvidia/Power", nvidia_power.data(), nvidia_power.size());
+    h5_write_buffer<float>(out_name, "/Housekeeping/nvidia/Power", nvidia_power.data(), nvidia_power.size(),
+                           "Power in watt");
 
     h5_write_buffer<double>(out_name, "/Housekeeping/nvidia/Power_Time", nvidia_power_time.data(), nvidia_power_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
