@@ -5,10 +5,10 @@ PROJECT(toolkitICL)
 
 if(DEFINED ENV{AMDPROFILERPATH})
     message(STATUS "Found AMD profiling driver")
-	option(USEAMDP "Use AMD Profiling" ON)
-	 add_definitions(-DUSEAMDP)
+    option(USEAMDP "Use AMD Profiling" ON)
+    add_definitions(-DUSEAMDP)
 ELSE()
-	option(USEAMDP "Use AMD Profiling" OFF)
+    option(USEAMDP "Use AMD Profiling" OFF)
 endif()
 
 find_package(CUDA)
