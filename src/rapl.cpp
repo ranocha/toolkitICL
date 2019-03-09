@@ -75,7 +75,7 @@ Rapl::Rapl() {
   uint32_t core_id1 = 0;
 
   pp1_supported = detect_igp();
-  open_msr(core_id0,fd0);
+  open_msr(core_id0, fd0);
 
   std::ifstream fileInput;
   std::string line;
@@ -98,7 +98,7 @@ Rapl::Rapl() {
           first_found = true;
           pid_0 = pid;
         } else {
-          if (!(pid == pid_0))  // this core has a diffrent socket
+          if (!(pid == pid_0))  // this core has a different socket
           {
             socket1_detected = true;
             open_msr(core_id1, fd1);
@@ -128,6 +128,10 @@ Rapl::Rapl() {
   minimum_power = power_units * ((double)((raw_value >> 16) & 0x7fff));
   maximum_power = power_units * ((double)((raw_value >> 32) & 0x7fff));
   time_window = time_units * ((double)((raw_value >> 48) & 0x7fff));
+
+  /* Read MSR_TEMPERATURE_TARGET Register */
+  raw_value = read_msr(MSR_TEMPERATURE_TARGET, fd0);
+  temp_target = (raw_value >> 16) & (uint64_t)(255); // get 8 bits starting at bit 16
 }
 
 
@@ -233,10 +237,8 @@ uint32_t Rapl::get_TDP() {
 }
 
 
-uint32_t Rapl::get_temp(){
-  uint32_t max_int = ~((uint32_t) 0);
-  uint64_t reg_data;
-
-  reg_data = read_msr(IA32_THERM_STATUS, fd0) & max_int;
-  return 0;
+uint32_t Rapl::get_temp() {
+  uint64_t raw_value = read_msr(IA32_PACKAGE_THERM_STATUS, fd0);
+  uint32_t temp = (raw_value >> 16) & (uint64_t)(127); // get 7 bits starting at bit 16
+  return temp_target - temp; // temp is the number of degrees Celsius below the thermal throttling temperature
 }

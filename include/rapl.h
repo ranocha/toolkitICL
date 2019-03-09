@@ -14,6 +14,7 @@ private:
   bool pp1_supported = true;
   bool socket1_detected = false;
 
+  int temp_target;
   double power_units, energy_units, time_units;
   double thermal_spec_power, minimum_power, maximum_power, time_window;
 

@@ -137,11 +137,15 @@ void AMD_log_pwr_func()
 #if defined(USEIRAPL)
 #include "rapl.h"
 bool intel_log_power = false;
+bool intel_log_temp = false;
 cl_uint intel_power_rate = 0;
+cl_uint intel_temp_rate = 0;
 std::vector<double> intel_power_time;
+std::vector<double> intel_temp_time;
 std::vector<uint64_t> intel_power0[5]; //Socket 0
 std::vector<uint64_t> intel_power1[5]; //Socket 1
 std::vector<std::string> MSR_names {"Package", "Cores", "DRAM", "GT"};
+std::vector<cl_ushort> intel_temp;
 
 Rapl *rapl;
 
@@ -188,6 +192,26 @@ void intel_log_power_func()
         intel_power1[3].push_back(pp1);
       }
 
+    }
+  }
+}
+
+void intel_log_temp_func()
+{
+  uint32_t temp;
+  timeval rawtime;
+
+  if (intel_temp_rate > 0)
+  {
+    intel_temp.clear();
+    intel_temp_time.clear();
+
+    while (intel_log_temp == true) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(intel_temp_rate));
+      temp = rapl->get_temp();
+      gettimeofday(&rawtime, NULL);
+      intel_temp_time.push_back(timeval2storage(rawtime));
+      intel_temp.push_back(temp);
     }
   }
 }
@@ -465,12 +489,9 @@ void print_help()
     << "  -nvidia_power sample_rate: \n    Log Nvidia GPU power consumption with `sample_rate` (ms)" << endl
     << "  -nvidia_temp sample_rate: \n    Log Nvidia GPU temperature with `sample_rate` (ms)" << endl
 #endif
-#if defined(USEIPG)
+#if defined(USEIPG) || defined(USEIRAPL)
     << "  -intel_power sample_rate: \n    Log Intel system power consumption with `sample_rate` (ms)" << endl
     << "  -intel_temp  sample_rate: \n    Log Intel package temperature with `sample_rate` (ms)" << endl
-#endif
-#if defined(USEIRAPL)
-    << "  -intel_power sample_rate: \n    Log Intel system power consumption with `sample_rate` (ms)" << endl
 #endif
 #if defined(USEAMDP)
     << "  -amd_cpu_power sample_rate: \n    Log AMD CPU power consumption with `sample_rate` (ms)" << endl
@@ -516,7 +537,7 @@ int main(int argc, char *argv[]) {
     nvidia_log_temp = true;
   }
 #endif
-#if defined(USEIPG)
+#if defined(USEIPG) || defined(USEIRAPL)
   if (cmdOptionExists(argv, argv + argc, "-intel_power")) {
     char const* tmp = getCmdOption(argv, argv + argc, "-intel_power");
     intel_power_rate = atoi(tmp);
@@ -526,13 +547,6 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
    char const* tmp = getCmdOption(argv, argv + argc, "-intel_temp");
    intel_temp_rate = atoi(tmp);
    intel_log_temp = true;
-  }
-#endif
-#if defined(USEIRAPL)
-  if (cmdOptionExists(argv, argv + argc, "-intel_power")) {
-    char const* tmp = getCmdOption(argv, argv + argc, "-intel_power");
-    intel_power_rate = atoi(tmp);
-    intel_log_power = true;
   }
 #endif
 #if defined(USEAMDP)
@@ -859,18 +873,22 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
 #endif
 
 #if defined(USEIRAPL)
-  if (intel_log_power)
+  if (intel_log_power || intel_log_temp)
   {
     cout << "Using Intel MSR interface..." << endl;
     h5_create_dir(out_name, "/Housekeeping");
     h5_create_dir(out_name, "/Housekeeping/intel");
-
     rapl = new Rapl();
+  }
+
+  if (intel_log_power)
+  {
     h5_write_single<float>(out_name, "/Housekeeping/intel/TDP", rapl->get_TDP(),
                            "Thermal Design Power in watt");
   }
 
   std::thread intel_log_power_thread(intel_log_power_func);
+  std::thread intel_log_temp_thread(intel_log_temp_func);
 
 #endif
 
@@ -941,6 +959,9 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
   intel_log_power = false;
   intel_log_power_thread.join();
 
+  intel_log_temp = false;
+  intel_log_temp_thread.join();
+
   if (intel_power_rate > 0)
   {
     // size()-1 because differences are computed later
@@ -983,6 +1004,15 @@ if (cmdOptionExists(argv, argv + argc, "-intel_temp")) {
                                "Power in watt");
       }
     }
+  }
+
+  if (intel_temp_rate > 0)
+  {
+    h5_write_buffer<double>(out_name, "/Housekeeping/intel/Temperature_Time", intel_temp_time.data(), intel_temp_time.size(),
+                            "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
+
+    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package_Temperature", intel_temp.data(), intel_temp.size(),
+                               "Temperature in degree Celsius");
   }
 
 #endif
