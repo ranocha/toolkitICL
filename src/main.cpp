@@ -805,6 +805,7 @@ int main(int argc, char *argv[]) {
 	cout << "Using NVML interface..." << endl << endl;
 	if (nvidia_log_power || nvidia_log_temp)
 	{
+		h5_create_dir(out_name, "/Housekeeping");
 		h5_create_dir(out_name, "/Housekeeping/Nvidia");
 	}
 	std::thread nvidia_log_power_thread(nvidia_log_power_func);
@@ -889,10 +890,10 @@ int main(int argc, char *argv[]) {
 	{
 		cout << "Using Intel MSR interface..." << endl;
 		h5_create_dir(out_name, "/Housekeeping");
-		h5_create_dir(out_name, "/Housekeeping/intel");
+		h5_create_dir(out_name, "/Housekeeping/Intel");
 
 		rapl = new Rapl();
-		h5_write_single<float>(out_name, "/Housekeeping/intel/TDP", rapl->get_TDP(),
+		h5_write_single<float>(out_name, "/Housekeeping/Intel/TDP", rapl->get_TDP(),
 			"Thermal Design Power in watt");
 	}
 
@@ -950,12 +951,14 @@ int main(int argc, char *argv[]) {
 
 	if (amd_power_rate > 0)
 	{
-		h5_write_buffer<double>(out_name, "/Housekeeping/AMD/Power_Time", amd_power_time.data(), amd_power_time.size());
+		h5_write_buffer<double>(out_name, "/Housekeeping/AMD/Power_Time", amd_power_time.data(), amd_power_time.size(),
+		"POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
 		for (size_t i = 0; i < AMDP_names.size(); i++)
 		{
 			std::string varname = "/Housekeeping/AMD/" + AMDP_names.at(i);
-			h5_write_buffer<cl_float>(out_name, varname.c_str(), amd_power0[i].data(), amd_power0[i].size());
+			h5_write_buffer<cl_float>(out_name, varname.c_str(), amd_power0[i].data(), amd_power0[i].size(),
+			"Power in watt");
 		}
 	}
 #endif
@@ -968,7 +971,7 @@ int main(int argc, char *argv[]) {
 	if (intel_power_rate > 0)
 	{
 		// size()-1 because differences are computed later
-		h5_write_buffer<double>(out_name, "/Housekeeping/intel/Power_Time", intel_power_time.data(), intel_power_time.size() - 1,
+		h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", intel_power_time.data(), intel_power_time.size() - 1,
 			"POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
 		std::vector<float> tmp_vector;
@@ -987,7 +990,7 @@ int main(int argc, char *argv[]) {
 			{
 				tmp_vector.push_back((rapl->get_e_unit()*(double)(intel_power0[i].at(j + 1) - intel_power0[i].at(j))) / ((double)intel_power_rate*0.001));
 			}
-			std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "0";
+			std::string varname = "/Housekeeping/Intel/" + MSR_names.at(i) + "0";
 			h5_write_buffer<float>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size(),
 				"Power in watt");
 		}
@@ -1002,7 +1005,7 @@ int main(int argc, char *argv[]) {
 				{
 					tmp_vector.push_back((rapl->get_e_unit()*(double)(intel_power1[i].at(j + 1) - intel_power1[i].at(j))) / ((double)intel_power_rate*0.001));
 				}
-				std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "1";
+				std::string varname = "/Housekeeping/Intel/" + MSR_names.at(i) + "1";
 				h5_write_buffer<float>(out_name, varname.c_str(), tmp_vector.data(), tmp_vector.size(),
 					"Power in watt");
 			}
@@ -1021,12 +1024,12 @@ int main(int argc, char *argv[]) {
 
 	if (intel_power_rate > 0)
 	{
-		h5_write_buffer<double>(out_name, "/Housekeeping/intel/Power_Time", intel_power_time.data(), intel_power_time.size(),
+		h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Power_Time", intel_power_time.data(), intel_power_time.size(),
 			"POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
 		for (size_t i = 0; i < MSR_names.size(); i++)
 		{
-			std::string varname = "/Housekeeping/intel/" + MSR_names.at(i) + "0";
+			std::string varname = "/Housekeeping/Intel/" + MSR_names.at(i) + "0";
 			h5_write_buffer<float>(out_name, varname.c_str(), intel_power[i].data(), intel_power[i].size(),
 				"Power in watt");
 		}
@@ -1034,7 +1037,7 @@ int main(int argc, char *argv[]) {
 
 	if (intel_temp_rate > 0)
 	{
-		h5_write_buffer<double>(out_name, "/Housekeeping/intel/Temperature_Time", intel_temp_time.data(), intel_temp_time.size(),
+		h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Temperature_Time", intel_temp_time.data(), intel_temp_time.size(),
 			"POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
 		h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package_Temperature", intel_temp.data(), intel_temp.size(),
@@ -1051,19 +1054,19 @@ int main(int argc, char *argv[]) {
 
 	if (nvidia_power_rate > 0) {
 
-		h5_write_buffer<float>(out_name, "/Housekeeping/nvidia/Power", nvidia_power.data(), nvidia_power.size(),
+		h5_write_buffer<float>(out_name, "/Housekeeping/Nvidia/Power", nvidia_power.data(), nvidia_power.size(),
 			"Power in watt");
 
-		h5_write_buffer<double>(out_name, "/Housekeeping/nvidia/Power_Time", nvidia_power_time.data(), nvidia_power_time.size(),
+		h5_write_buffer<double>(out_name, "/Housekeeping/Nvidia/Power_Time", nvidia_power_time.data(), nvidia_power_time.size(),
 			"POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 	}
 
 	if (nvidia_temp_rate > 0) {
 
-		h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/nvidia/Temperature", nvidia_temp.data(), nvidia_temp.size(),
+		h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/Nvidia/Temperature", nvidia_temp.data(), nvidia_temp.size(),
 			"Temperature in degree Celsius");
 
-		h5_write_buffer<double>(out_name, "/Housekeeping/nvidia/Temperature_Time", nvidia_temp_time.data(), nvidia_temp_time.size(),
+		h5_write_buffer<double>(out_name, "/Housekeeping/Nvidia/Temperature_Time", nvidia_temp_time.data(), nvidia_temp_time.size(),
 			"POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 	}
 #endif
