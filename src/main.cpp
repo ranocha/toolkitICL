@@ -238,7 +238,7 @@ std::string utf16ToUtf8(const std::wstring& utf16Str)
 CIntelPowerGadgetLib energyLib;
 
 std::vector<double> intel_power_time;
-std::vector<double> is_tmp_time;
+std::vector<double> intel_temp_time;
 std::vector<std::string> MSR_names;
 std::vector<int> MSR;
 bool intel_log_power = false;
@@ -247,9 +247,9 @@ cl_uint intel_power_rate = 0;
 cl_uint intel_temp_rate = 0;
 
 std::vector<float> intel_power[5];
-std::vector<int> is_tmp;
+std::vector<int> intel_temp;
 
-void intel_log_tmp_func()
+void intel_log_temp_func()
 {
 	int Data;
 	timeval rawtime;
@@ -813,7 +813,7 @@ int main(int argc, char *argv[]) {
 #endif
 
 #if defined(USEIPG)
-	if (intel_log_power || is_log_tmp)
+	if (intel_log_power || intel_log_temp)
 	{
 		h5_create_dir(out_name, "/Housekeeping");
 		h5_create_dir(out_name, "/Housekeeping/Intel");
@@ -830,7 +830,7 @@ int main(int argc, char *argv[]) {
 
 		double CPU_TDP = 0;
 		energyLib.GetTDP(0, &CPU_TDP);
-		h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP", (uint32_t)round(CPU_TDP));
+		h5_write_single<uint32_t>(out_name, "/Housekeeping/Intel/TDP", (uint32_t)round(CPU_TDP), "Thermal Design Power in watt");
 
 		int numCPUnodes = 0;
 		energyLib.GetNumNodes(&numCPUnodes);
@@ -881,7 +881,7 @@ int main(int argc, char *argv[]) {
 
 	}
 	std::thread intel_log_power_thread(intel_log_power_func);
-	std::thread is_log_tmp_thread(is_log_tmp_func);
+	std::thread intel_log_temp_thread(intel_log_temp_func);
 
 #endif
 
@@ -1040,7 +1040,7 @@ int main(int argc, char *argv[]) {
 		h5_write_buffer<double>(out_name, "/Housekeeping/Intel/Temperature_Time", intel_temp_time.data(), intel_temp_time.size(),
 			"POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
-		h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package_Temperature", intel_temp.data(), intel_temp.size(),
+		h5_write_buffer<cl_int>(out_name, "/Housekeeping/Intel/Package_Temperature", intel_temp.data(), intel_temp.size(),
 			"Temperature in degree Celsius");
 	}
 
