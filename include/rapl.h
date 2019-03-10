@@ -39,7 +39,8 @@ public:
   bool get_socket1_data(uint64_t &Epkg, uint64_t &Epp0, uint64_t &Epp1, uint64_t &Edram);
   double get_e_unit();
   uint32_t get_TDP();
-  uint32_t get_temp();
+  uint32_t get_temp0();
+  uint32_t get_temp1();
   bool detect_igp();
   bool detect_socket1();
 };

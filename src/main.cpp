@@ -181,7 +181,8 @@ std::vector<double> intel_temp_time;
 std::vector<uint64_t> intel_power0[5]; //Socket 0
 std::vector<uint64_t> intel_power1[5]; //Socket 1
 std::vector<std::string> MSR_names { "Package", "Cores", "DRAM", "GT" };
-std::vector<cl_ushort> intel_temp;
+std::vector<cl_ushort> intel_temp0;
+std::vector<cl_ushort> intel_temp1;
 
 Rapl *rapl;
 
@@ -234,20 +235,31 @@ void intel_log_power_func()
 
 void intel_log_temp_func()
 {
-  uint32_t temp;
+  uint32_t temp0,temp1;
   timeval rawtime;
 
   if (intel_temp_rate > 0)
   {
-    intel_temp.clear();
+    intel_temp0.clear();
+	intel_temp1.clear();
     intel_temp_time.clear();
 
     while (intel_log_temp == true) {
       std::this_thread::sleep_for(std::chrono::milliseconds(intel_temp_rate));
-      temp = rapl->get_temp();
+      if (rapl->detect_socket1() == true)
+      {
+	  temp1 = rapl->get_temp1();
+      }
+	  temp0 = rapl->get_temp0();
       gettimeofday(&rawtime, NULL);
+	  
       intel_temp_time.push_back(timeval2storage(rawtime));
-      intel_temp.push_back(temp);
+      intel_temp0.push_back(temp0);
+	  if (rapl->detect_socket1() == true)
+      {
+	  intel_temp1.push_back(temp1);
+      }
+	  
     }
   }
 }
@@ -1056,8 +1068,14 @@ int main(int argc, char *argv[]) {
     h5_write_buffer<double>(out_name, "/Housekeeping/intel/Temperature_Time", intel_temp_time.data(), intel_temp_time.size(),
                             "POSIX UTC time in seconds since 1970-01-01T00:00.000 (resolution of milliseconds)");
 
-    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package_Temperature", intel_temp.data(), intel_temp.size(),
+    h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package0_Temperature", intel_temp0.data(), intel_temp0.size(),
                                "Temperature in degree Celsius");
+							   
+    if (rapl->detect_socket1() == true)
+    {
+	        h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package1_Temperature", intel_temp1.data(), intel_temp1.size(),
+                               "Temperature in degree Celsius");
+	}
   }
 
 #endif

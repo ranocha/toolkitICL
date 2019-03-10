@@ -237,8 +237,14 @@ uint32_t Rapl::get_TDP() {
 }
 
 
-uint32_t Rapl::get_temp() {
+uint32_t Rapl::get_temp0() {
   uint64_t raw_value = read_msr(IA32_PACKAGE_THERM_STATUS, fd0);
+  uint32_t temp = (raw_value >> 16) & (uint64_t)(127); // get 7 bits starting at bit 16
+  return temp_target - temp; // temp is the number of degrees Celsius below the thermal throttling temperature
+}
+
+uint32_t Rapl::get_temp1() {
+  uint64_t raw_value = read_msr(IA32_PACKAGE_THERM_STATUS, fd1);
   uint32_t temp = (raw_value >> 16) & (uint64_t)(127); // get 7 bits starting at bit 16
   return temp_target - temp; // temp is the number of degrees Celsius below the thermal throttling temperature
 }
