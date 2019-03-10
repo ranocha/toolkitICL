@@ -13,6 +13,7 @@ private:
   bool pp1_supported = true;
   bool socket1_detected = false;
 
+  int temp_target;
   double power_units, energy_units, time_units;
   double thermal_spec_power, minimum_power, maximum_power, time_window;
 
@@ -34,8 +35,8 @@ public:
   Rapl();
   void sample();
 
-  bool get_socket0_data(uint64_t &Epkg , uint64_t &Epp0 , uint64_t &Epp1 , uint64_t &Edram);
-  bool get_socket1_data(uint64_t &Epkg , uint64_t &Epp0 , uint64_t &Epp1 , uint64_t &Edram);
+  bool get_socket0_data(uint64_t &Epkg, uint64_t &Epp0, uint64_t &Epp1, uint64_t &Edram);
+  bool get_socket1_data(uint64_t &Epkg, uint64_t &Epp0, uint64_t &Epp1, uint64_t &Edram);
   double get_e_unit();
   uint32_t get_TDP();
   uint32_t get_temp();
