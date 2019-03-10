@@ -241,25 +241,24 @@ void intel_log_temp_func()
   if (intel_temp_rate > 0)
   {
     intel_temp0.clear();
-	intel_temp1.clear();
+    intel_temp1.clear();
     intel_temp_time.clear();
 
     while (intel_log_temp == true) {
       std::this_thread::sleep_for(std::chrono::milliseconds(intel_temp_rate));
+      gettimeofday(&rawtime, NULL);
+      temp0 = rapl->get_temp0();
       if (rapl->detect_socket1() == true)
       {
-	  temp1 = rapl->get_temp1();
+        temp1 = rapl->get_temp1();
       }
-	  temp0 = rapl->get_temp0();
-      gettimeofday(&rawtime, NULL);
-	  
+
       intel_temp_time.push_back(timeval2storage(rawtime));
       intel_temp0.push_back(temp0);
-	  if (rapl->detect_socket1() == true)
+      if (rapl->detect_socket1() == true)
       {
-	  intel_temp1.push_back(temp1);
+        intel_temp1.push_back(temp1);
       }
-	  
     }
   }
 }
@@ -1070,12 +1069,12 @@ int main(int argc, char *argv[]) {
 
     h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package0_Temperature", intel_temp0.data(), intel_temp0.size(),
                                "Temperature in degree Celsius");
-							   
+
     if (rapl->detect_socket1() == true)
     {
-	        h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package1_Temperature", intel_temp1.data(), intel_temp1.size(),
-                               "Temperature in degree Celsius");
-	}
+      h5_write_buffer<cl_ushort>(out_name, "/Housekeeping/intel/Package1_Temperature", intel_temp1.data(), intel_temp1.size(),
+                                 "Temperature in degree Celsius");
+    }
   }
 
 #endif
