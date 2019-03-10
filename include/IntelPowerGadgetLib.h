@@ -8,7 +8,7 @@ Include any supplier copyright notices as supplier requires Intel to use.
 
 Include supplier trademarks or logos as supplier requires Intel to use, preceded by an asterisk. An asterisked footnote can be added as follows: *Third Party trademarks are the property of their respective owners.
 
-Unless otherwise agreed by Intel in writing, you may not remove or alter this notice or any other notice embedded in Materials by Intel or Intel’s suppliers or licensors in any way.
+Unless otherwise agreed by Intel in writing, you may not remove or alter this notice or any other notice embedded in Materials by Intel or Intelï¿½s suppliers or licensors in any way.
 */
 
 
@@ -40,47 +40,46 @@ typedef bool (*IPGIsGTAvailable) ();
 class CIntelPowerGadgetLib
 {
 public:
-	CIntelPowerGadgetLib(void);
-	~CIntelPowerGadgetLib(void);
-	
-	bool IntelEnergyLibInitialize(void);
-	bool GetNumNodes(int * nNodes);
-	bool GetNumMsrs(int *nMsrs);
-	bool GetMsrName(int iMsr, wchar_t *szName);
-	bool GetMsrFunc(int iMsr, int *funcID);
-	bool GetIAFrequency(int iNode, int *freqInMHz);
-	bool GetGTFrequency(int *freq);
-	bool GetTDP(int iNode, double *TDP);
-	bool GetMaxTemperature(int iNode, int *degreeC);
-	bool GetTemperature(int iNode, int *degreeC);
-	bool ReadSample();
-	bool GetSysTime(SYSTEMTIME *sysTime);
-	bool GetTimeInterval(double *offset);
-	bool GetBaseFrequency(int iNode, double *baseFrequency);
-	bool GetPowerData(int iNode, int iMSR, double *results, int *nResult);
-	bool StartLog(wchar_t *szFilename);
-	bool StopLog();
-	bool IsGTAvailable();
-	wstring GetLastError();
+  CIntelPowerGadgetLib(void);
+  ~CIntelPowerGadgetLib(void);
+
+  bool IntelEnergyLibInitialize(void);
+  bool GetNumNodes(int * nNodes);
+  bool GetNumMsrs(int *nMsrs);
+  bool GetMsrName(int iMsr, wchar_t *szName);
+  bool GetMsrFunc(int iMsr, int *funcID);
+  bool GetIAFrequency(int iNode, int *freqInMHz);
+  bool GetGTFrequency(int *freq);
+  bool GetTDP(int iNode, double *TDP);
+  bool GetMaxTemperature(int iNode, int *degreeC);
+  bool GetTemperature(int iNode, int *degreeC);
+  bool ReadSample();
+  bool GetSysTime(SYSTEMTIME *sysTime);
+  bool GetTimeInterval(double *offset);
+  bool GetBaseFrequency(int iNode, double *baseFrequency);
+  bool GetPowerData(int iNode, int iMSR, double *results, int *nResult);
+  bool StartLog(wchar_t *szFilename);
+  bool StopLog();
+  bool IsGTAvailable();
+  wstring GetLastError();
 
 private:
-	IPGInitialize pInitialize;
-	IPGGetNumNodes pGetNumNodes;
-	IPGGetNumMsrs pGetNumMsrs;
-	IPGGetMsrName pGetMsrName;
-	IPGGetMsrFunc pGetMsrFunc;
-	IPGGetIAFrequency pGetIAFrequency;
-	IPGGetGTFrequency pGetGTFrequency;
-	IPGGetTDP pGetTDP;
-	IPGGetMaxTemperature pGetMaxTemperature;
-	IPGGetTemperature pGetTemperature;
-	IPGReadSample pReadSample; 
-	IPGGetSysTime pGetSysTime;
-	IPGGetTimeInterval pGetTimeInterval;
-	IPGGetBaseFrequency pGetBaseFrequency;
-	IPGGetPowerData pGetPowerData;
-	IPGStartLog pStartLog;
-	IPGStopLog pStopLog;
-	IPGIsGTAvailable pIsGTAvailable;
+  IPGInitialize pInitialize;
+  IPGGetNumNodes pGetNumNodes;
+  IPGGetNumMsrs pGetNumMsrs;
+  IPGGetMsrName pGetMsrName;
+  IPGGetMsrFunc pGetMsrFunc;
+  IPGGetIAFrequency pGetIAFrequency;
+  IPGGetGTFrequency pGetGTFrequency;
+  IPGGetTDP pGetTDP;
+  IPGGetMaxTemperature pGetMaxTemperature;
+  IPGGetTemperature pGetTemperature;
+  IPGReadSample pReadSample;
+  IPGGetSysTime pGetSysTime;
+  IPGGetTimeInterval pGetTimeInterval;
+  IPGGetBaseFrequency pGetBaseFrequency;
+  IPGGetPowerData pGetPowerData;
+  IPGStartLog pStartLog;
+  IPGStopLog pStopLog;
+  IPGIsGTAvailable pIsGTAvailable;
 };
-
