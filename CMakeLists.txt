@@ -116,6 +116,7 @@ ENDIF(OpenCL_FOUND)
 ADD_SUBDIRECTORY(src)
 
 # tests
+OPTION(TESTS "Build unit tests" OFF)
 IF(TESTS)
   enable_testing()
   ADD_SUBDIRECTORY(test)
