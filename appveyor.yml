@@ -107,22 +107,22 @@ build_script:
   - sh: cmake --build . --target test
     # test power logging
     # instead of `sudo toolkitICL ...`, `sudo chmod o+rw /dev/cpu/0/msr` could be run once
-  - sh: sudo modprobe msr
-  - sh: cd test
-  - sh: sudo ../bin/toolkitICL -b -intel_power 1000 -c repetition_test.h5
-  - sh: h5ls out_repetition_test.h5/housekeeping
-  - sh: h5ls out_repetition_test.h5/housekeeping/intel
-  - sh: h5dump -d housekeeping/intel/cores0 out_repetition_test.h5
-  - sh: h5dump -d housekeeping/intel/DRAM0 out_repetition_test.h5
-  # - sh: h5dump -d housekeeping/intel/GT0 out_repetition_test.h5 # not required on all machines
-  - sh: h5dump -d housekeeping/intel/package0 out_repetition_test.h5
-  - sh: h5dump -d housekeeping/intel/power_time out_repetition_test.h5
-  - sh: h5dump -d housekeeping/intel/TDP out_repetition_test.h5
-  - sh: sudo ../bin/toolkitICL -b -intel_temp 1000 -c repetition_test.h5
-  - sh: h5ls out_repetition_test.h5/housekeeping
-  - sh: h5ls out_repetition_test.h5/housekeeping/intel
-  - sh: h5dump -d housekeeping/intel/package0_temperature out_repetition_test.h5
-  - sh: h5dump -d housekeeping/intel/temperature_time out_repetition_test.h5
-  - sh: cd ..
+  # - sh: sudo modprobe msr
+  # - sh: cd test
+  # - sh: sudo ../bin/toolkitICL -b -intel_power 1000 -c repetition_test.h5
+  # - sh: h5ls out_repetition_test.h5/housekeeping
+  # - sh: h5ls out_repetition_test.h5/housekeeping/intel
+  # - sh: h5dump -d housekeeping/intel/cores0 out_repetition_test.h5
+  # - sh: h5dump -d housekeeping/intel/DRAM0 out_repetition_test.h5
+  # # - sh: h5dump -d housekeeping/intel/GT0 out_repetition_test.h5 # not required on all machines
+  # - sh: h5dump -d housekeeping/intel/package0 out_repetition_test.h5
+  # - sh: h5dump -d housekeeping/intel/power_time out_repetition_test.h5
+  # - sh: h5dump -d housekeeping/intel/TDP out_repetition_test.h5
+  # - sh: sudo ../bin/toolkitICL -b -intel_temp 1000 -c repetition_test.h5
+  # - sh: h5ls out_repetition_test.h5/housekeeping
+  # - sh: h5ls out_repetition_test.h5/housekeeping/intel
+  # - sh: h5dump -d housekeeping/intel/package0_temperature out_repetition_test.h5
+  # - sh: h5dump -d housekeeping/intel/temperature_time out_repetition_test.h5
+  # - sh: cd ..
     # display test log
   - sh: cat Testing/Temporary/LastTest.log
