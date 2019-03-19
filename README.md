@@ -92,6 +92,22 @@ Additional domumentation will be provided in the directory [`doc`](https://githu
 
 A useful tool to view and edit HDF5 files is [HDFView](https://www.hdfgroup.org/downloads/hdfview/).
 
+
+## Reference
+
+This software can be cited as:
+```
+@misc{heinisch2019toolkitICL,
+  title={{toolkitICL}. {A}n open source tool for automated {OpenCL} kernel execution.},
+  author={Heinisch, Philip and Ostaszewski, Katharina and Ranocha, Hendrik},
+  month={03},
+  year={2019},
+  howpublished={\url{https://github.com/IANW-Projects/toolkitICL}},
+  doi={10.5281/zenodo.2597653}
+}
+```
+
+
 ## License
 
 This project is licensed under the terms of the Creative Commons
