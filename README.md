@@ -1,6 +1,7 @@
 # toolkitICL
 
 [![License](https://licensebuttons.net/l/by-nc-nd/3.0/88x31.png)](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2597653.svg)](https://doi.org/10.5281/zenodo.2597653)
 [![Build Status Appveyor](https://ci.appveyor.com/api/projects/status/js729s93vvdwgnjx?svg=true)](https://ci.appveyor.com/project/ranocha/toolkitICL)
 [![Build Status Travis](https://travis-ci.com/IANW-Projects/toolkitICL.svg?branch=master)](https://travis-ci.com/IANW-Projects/toolkitICL)
 
