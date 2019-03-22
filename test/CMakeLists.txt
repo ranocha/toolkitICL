@@ -39,7 +39,7 @@ endforeach()
 
 
 # parsing test
-set(PARSING_TESTS parsing_filename_test)
+set(PARSING_TESTS parsing_test)
 foreach(TEST ${PARSING_TESTS})
   add_executable(${TEST} ${TEST}.cpp ../include/opencl_include.hpp ../include/util.hpp ../include/hdf5_io.hpp $<TARGET_OBJECTS:hdf5_io>)
 endforeach()

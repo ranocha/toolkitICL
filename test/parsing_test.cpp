@@ -17,7 +17,7 @@ int main(void)
 {
   constexpr int LENGTH = 32;
 
-  string filename{"parsing_filename_test.h5"};
+  string filename{"parsing_test.h5"};
 
   if (fileExists(filename)) {
     remove(filename.c_str());
@@ -69,7 +69,8 @@ kernel void add_one(global REAL* values)\n\
   h5_write_buffer<cl_ulong>(filename, "data/values", &values[0], LENGTH);
 
 
-  // call toolkitICL
+  // Parsing Filename Test
+  cout << "Parsing Filename Test" << endl;
   ostringstream command;
 #if defined(_WIN32)
   char sep = '\\';
@@ -87,8 +88,31 @@ kernel void add_one(global REAL* values)\n\
   out_filename.insert(0, "out_");
   if (!fileExists(out_filename)) {
     cerr << "Error: No output generated. Expected " << out_filename << endl;
-    return 2;
+    return 1;
   }
+
+
+  // Unknown Command Line Arguments Test
+  cout << "Unknown Command Line Arguments Test" << endl;
+  ostringstream().swap(command);
+  command << "toolkitICL -what_is_the_answer_to_life_the_universe_and_everything 42 -c " << filename;
+  retval = system(command.str().c_str());
+  if (!retval) {
+    cerr << "Error: Unknown command line argument specified; toolkitICL should throw an error." << endl;
+    return 1;
+  }
+
+
+  // Wrong Format of Command Line Arguments Test
+  cout << "Wrong Format of Command Line Arguments Test" << endl;
+  ostringstream().swap(command);
+  command << "toolkitICL -d asd213 -c " << filename;
+  retval = system(command.str().c_str());
+  if (!retval) {
+    cerr << "Error: Wrong command line argument specified; toolkitICL should throw an error." << endl;
+    return 1;
+  }
+
 
   //TODO: possible cleanup?
   // if (fileExists(kernel_url)) {
