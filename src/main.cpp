@@ -784,7 +784,8 @@ int main(int argc, char *argv[]) {
   h5_get_content(filename, "/data/", data_names, data_types, data_sizes);
 
   cout << "Creating output HDF5 file..." << endl;
-  string out_name = "out_" + string(filename);
+  string out_name = filename;
+  out_name = "out_" + out_name.substr(out_name.find_last_of("/\\") + 1);
 
   if (fileExists(out_name)) {
     remove(out_name.c_str());
@@ -985,7 +986,7 @@ int main(int argc, char *argv[]) {
   {
     cout << "Using Intel Power Gadget interface..." << endl;
     h5_create_dir(out_name, "/housekeeping");
-    h5_create_dir(out_name, "/housekeeping/intel"); 
+    h5_create_dir(out_name, "/housekeeping/intel");
     rapl = new Rapl();
   }
 
