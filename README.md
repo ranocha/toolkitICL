@@ -109,6 +109,19 @@ This software can be cited as:
   doi={10.5281/zenodo.2597653}
 }
 ```
+ToolkitICL has been used in the publication
+```
+@online{heinisch2020towards,
+  title={Towards Green Computing: {A} Survey of Performance and Energy
+         Efficiency of Different Platforms using {OpenCL}},
+  author={Heinisch, Philip and Ostaszewski, Katharina and Ranocha, Hendrik},
+  year={2020},
+  month={03},
+  eprint={2003.03794},
+  eprinttype={arxiv},
+  eprintclass={CS.PF}
+}
+```
 
 
 ## License
